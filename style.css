@@ -1,0 +1,82 @@
+body {
+    background-color: #000;
+    color: #fff;
+    font-family: 'Courier New', Courier, monospace;
+    display: flex;
+    flex-direction: column; /* Allow footer to sit below container */
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+}
+
+.container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
+
+#terminal {
+    display: inline-block;
+    white-space: pre-wrap;
+    border-right: 2px solid #fff;
+    animation: blink 1s step-end infinite;
+}
+
+#pfp {
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    margin-bottom: 20px;
+}
+
+a {
+    color: #fff;
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+.line {
+    display: flex;
+    justify-content: space-between;
+    width: 400px;
+    min-height: 24px;
+}
+
+.label {
+    text-align: left;
+}
+
+.value {
+    text-align: right;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+}
+
+.lang-icon {
+    width: 24px;
+    height: 24px;
+    margin-left: 8px;
+    vertical-align: middle;
+    filter: invert(1);
+}
+
+#footer {
+    position: absolute;
+    bottom: 20px;
+    text-align: center;
+    width: 100%;
+}
+
+#footer a {
+    margin: 0 15px; /* Add space between links */
+}
+
+.github-link {
+    font-size: 1.25em; /* Make GitHub link 25% larger */
+}
