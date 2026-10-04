@@ -126,7 +126,7 @@ function drawHalo() {
 const canvas = document.getElementById('dot-matrix');
 const context = canvas.getContext('2d');
 const cursor = document.getElementById('cursor');
-const weightedElements = [...document.querySelectorAll('[data-weight], .social-content h2, .section-description, .project-card, .roadmap-block h3, .milestone > div, .qualifications-heading h2, .projects-heading h2, .site-header a, #motion-toggle')];
+const weightedElements = [...document.querySelectorAll('[data-weight], .project-card, .social-content h2, .roadmap-block h3, .qualifications-heading h2, .projects-heading h2')];
 
 // Signed distance to a circle or rounded rectangle gives each shape its own edge field.
 function edgeField(x, y, shape) {
@@ -180,6 +180,8 @@ if (context) {
             const rect = element.getBoundingClientRect();
             if (rect.bottom < -100 || rect.top > height + 100 || rect.right < -100 || rect.left > width + 100 || !rect.width || !rect.height) return [];
             const style = getComputedStyle(element);
+            // Small text never gets an independent field, including headings on narrow screens.
+            if (!element.matches('[data-weight], .project-card') && parseFloat(style.fontSize) < 28) return [];
             if (style.visibility === 'hidden' || Number(style.opacity) < 0.02) return [];
             const reveal = element.closest('.reveal-item, .social-content');
             const opacity = reveal ? Number(getComputedStyle(reveal).opacity) : 1;
