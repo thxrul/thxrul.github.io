@@ -17,3 +17,5 @@ The dot matrix responds to the pointer and pulls harder while pressed. Each soci
 Commit and push the site files to `main`. In the repository's **Settings → Pages**, choose **Deploy from a branch**, select **main** and **/ (root)**, then save. GitHub Pages serves `index.html` directly. CSS and JavaScript use relative paths, so the site also works under a project subdirectory.
 
 Twitter and YouTube retain their original destinations and appear as plain links in their own sections. Update their `href` attributes in `index.html` if you want to point them at specific profiles.
+
+The intro, portrait, headings, and project cards deform the dot grid according to their visible bounds. The horizontal qualification roadmaps scroll sideways on small screens. The single audio button plays the locally hosted `assets/ice-zertal.mp3` after a click; a Web Audio analyser drives the surrounding spring-based dot visualizer. No external audio service or build step is needed.

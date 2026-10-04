@@ -102,12 +102,18 @@ html.motion-reduced { scroll-behavior: auto; }
 .qualifications-heading h2 { font-size: clamp(36px, 8.5vw, 120px); overflow-wrap: anywhere; margin-bottom: 80px; }
 .roadmap-block { max-width: 900px; margin: 0 0 80px; }
 .roadmap-block h3 { font-size: clamp(20px, 3vw, 32px); font-weight: normal; letter-spacing: -1px; margin: 0 0 24px; }
+.roadmap-scroll { overflow-x: auto; padding-bottom: 16px; scrollbar-width: thin; scrollbar-color: #606066 transparent; }
+.roadmap-scroll:focus-visible { outline: 1px solid var(--muted); outline-offset: 8px; }
 .roadmap { position: relative; }
-.roadmap-path { position: absolute; top: 0; left: 0; width: 80px; height: 100%; overflow: visible; pointer-events: none; }
+.roadmap-cisco { min-width: 600px; }
+.roadmap-degrees { min-width: 820px; }
+.roadmap-path { position: absolute; top: 0; left: 0; width: 100%; height: 88px; pointer-events: none; }
 .roadmap-path path { stroke: #77777d; stroke-width: 1.5; vector-effect: non-scaling-stroke; }
-.roadmap-list { list-style: none; padding: 0 0 0 80px; margin: 0; }
-.milestone { position: relative; display: flex; align-items: center; min-height: 180px; padding: 24px 0 24px 12px; }
-.milestone::before { content: ''; position: absolute; left: -48px; top: calc(50% - 8px); width: 16px; height: 16px; border: 3px solid var(--background); border-radius: 50%; background: #808087; box-shadow: 0 0 0 1px #80808766; }
+.roadmap-list { list-style: none; padding: 0; margin: 0; display: grid; }
+.roadmap-cisco .roadmap-list { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.roadmap-degrees .roadmap-list { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.milestone { position: relative; min-height: 230px; padding: 84px 16px 24px; text-align: center; }
+.milestone::before { content: ''; position: absolute; left: calc(50% - 8px); top: 36px; width: 16px; height: 16px; border: 3px solid var(--background); border-radius: 50%; background: #808087; box-shadow: 0 0 0 1px #80808766; }
 .milestone.completed::before { background: #64d995; box-shadow: 0 0 0 1px #64d99566, 0 0 20px #64d99520; }
 .milestone.current::before { background: #f4ac61; box-shadow: 0 0 0 1px #f4ac6166, 0 0 20px #f4ac6120; }
 .milestone h4 { margin: 0; font-size: clamp(17px, 2.6vw, 28px); font-weight: normal; line-height: 1.5; }
@@ -118,7 +124,41 @@ html.motion-reduced { scroll-behavior: auto; }
     .qualifications-section { margin: 0 24px; padding: 80px 4px; }
     .qualifications-heading h2 { margin-bottom: 56px; }
     .roadmap-block { margin-bottom: 56px; }
-    .roadmap-list { padding-left: 64px; }
-    .roadmap-path { left: -16px; }
-    .milestone { padding-left: 6px; }
+
+}
+
+/* The portrait and introduction share a horizontal composition. */
+.container { width: min(100%, 980px); display: flex; align-items: center; gap: clamp(24px, 5vw, 72px); text-align: left; }
+.avatar { width: 224px; height: 224px; flex: 0 0 224px; margin: 0; border: 1px solid #eeeeea50; }
+.avatar > span { font-size: 76px; }
+.intro-box { flex: 1; min-width: 0; padding: 38px; border: 1px solid #eeeeea60; border-radius: 8px; background: #161619e8; box-shadow: 0 12px 48px #00000044; }
+.intro-box h1 { margin-bottom: 26px; color: #eeeeea; -webkit-text-stroke: .4px #fff; text-shadow: 1px 1px 0 #111113; }
+.intro-box .eyebrow { margin-bottom: 18px; }
+#terminal { max-width: none; margin: 0; }
+.roadmap-block { max-width: none; }
+.milestone h4 { font-size: clamp(16px, 1.6vw, 22px); }
+.site-header { top: 12px; }
+.audio-player { position: absolute; top: 8px; left: 50%; transform: translateX(-50%); width: 96px; height: 96px; display: grid; place-items: center; z-index: 8; }
+#audio-halo { position: absolute; inset: 0; width: 96px; height: 96px; pointer-events: none; }
+#audio-toggle { width: 44px; height: 44px; border: 1px solid #eeeeea70; border-radius: 50%; color: var(--text); background: #17171be8; display: grid; place-items: center; cursor: pointer; z-index: 1; transition: border-color 200ms, background 200ms; }
+#audio-toggle:hover { background: #303035; border-color: var(--text); }
+#audio-toggle:focus-visible { outline: 2px solid var(--text); outline-offset: 5px; }
+#audio-toggle svg { width: 18px; height: 18px; fill: currentColor; grid-area: 1 / 1; }
+#audio-toggle .pause-icon, #audio-toggle.is-playing .play-icon { display: none; }
+#audio-toggle.is-playing .pause-icon { display: block; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+@media (max-width: 1100px) { .site-header { top: 84px; } .hero { padding-top: 210px; } }
+@media (max-width: 600px) {
+    .container { gap: 18px; align-items: flex-start; }
+    .avatar { width: 128px; height: 128px; flex-basis: 128px; }
+    .avatar > span { font-size: 44px; }
+    .intro-box { padding: 18px 14px; }
+    .intro-box h1 { font-size: 21px; letter-spacing: -1px; }
+    .intro-box .eyebrow { font-size: 8px; letter-spacing: 1px; }
+    #terminal { font-size: 11px; }
+    .line { display: block; padding: 10px 0; }
+    .label { display: block; margin-bottom: 5px; }
+    .value { display: inline-block; text-align: left; }
+    .hero { padding-left: 18px; padding-right: 18px; }
+    .qualifications-section { min-height: 130svh; }
 }

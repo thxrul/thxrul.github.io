@@ -3,15 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="tharul — studying at Coventry University. A small corner of the internet.">
+    <meta name="description" content="Tharul — studying at Coventry University. A small corner of the internet.">
     <meta name="theme-color" content="#111113">
     <title>thxrul</title>
-    <link rel="stylesheet" href="style.css?v=20261005-4">
-    <script src="script.js?v=20261005-4" defer></script>
+    <link rel="stylesheet" href="style.css?v=20261005-5">
+    <script src="script.js?v=20261005-5" defer></script>
 </head>
 <body>
     <canvas id="dot-matrix" aria-hidden="true"></canvas>
     <div id="cursor" aria-hidden="true"></div>
+    <div class="audio-player">
+        <canvas id="audio-halo" width="96" height="96" aria-hidden="true"></canvas>
+        <button id="audio-toggle" type="button" aria-label="Play audio" aria-pressed="false" title="Play audio" data-weight="circle">
+            <svg class="play-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 11 7-11 7Z"/></svg>
+            <svg class="pause-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5h3v14H7zm7 0h3v14h-3z"/></svg>
+        </button>
+        <audio id="site-audio" src="assets/ice-zertal.mp3" preload="none"></audio>
+        <span id="audio-status" class="sr-only" role="status"></span>
+    </div>
     <header class="site-header">
         <a class="wordmark" href="#home" aria-label="Back to the top">thxrul<span>_</span></a>
         <nav aria-label="Social sections">
@@ -25,16 +34,18 @@
     <main>
         <section class="hero" id="home" aria-labelledby="intro-title">
             <div class="container">
-                <div class="avatar">
-                    <span aria-hidden="true">t.</span>
-                    <img id="pfp" src="https://github.com/thxrul.png?size=240" alt="tharul's profile picture" width="112" height="112">
+                <div class="avatar" data-weight="circle">
+                    <span aria-hidden="true">T.</span>
+                    <img id="pfp" src="https://github.com/thxrul.png?size=480" alt="Tharul's profile picture" width="224" height="224">
                 </div>
+                <div class="intro-box" data-weight="rectangle">
                 <p class="eyebrow">A small corner of the internet</p>
-                <h1 id="intro-title">hello, i'm tharul<span class="caret" aria-hidden="true">_</span></h1>
-                <div id="terminal" aria-label="About tharul">
-                    <div class="line"><span class="label">Name:</span><span class="value">tharul</span></div>
+                <h1 id="intro-title">Hello, I'm Tharul<span class="caret" aria-hidden="true">_</span></h1>
+                <div id="terminal" aria-label="About Tharul">
+                    <div class="line"><span class="label">Name:</span><span class="value">Tharul</span></div>
                     <div class="line"><span class="label">Studying at:</span><a class="value university" href="https://www.coventry.ac.uk/" target="_blank" rel="noopener noreferrer">CU@UK <span aria-hidden="true">↗</span></a></div>
-                    <div class="line"><span class="label">Hobbies:</span><span class="value">nerdy shit</span></div>
+                    <div class="line"><span class="label">Hobbies:</span><span class="value">Nerdy shit</span></div>
+                </div>
                 </div>
             </div>
             <a class="scroll-hint" href="#qualifications"><span>Keep scrolling</span><span aria-hidden="true">↓</span></a>
@@ -45,26 +56,30 @@
                 <h2 id="qualifications-title">Qualifications<span class="title-dot">.</span></h2>
             </div>
             <div class="roadmap-block reveal-item">
-                <h3>CISCO Certifications</h3>
+                <h3>Cisco Certifications</h3>
+                <div class="roadmap-scroll" tabindex="0" aria-label="Cisco certifications roadmap; scroll horizontally on small screens">
                 <div class="roadmap roadmap-cisco">
-                    <svg class="roadmap-path" viewBox="0 0 80 540" preserveAspectRatio="none" fill="none" aria-hidden="true"><path d="M40 90 C-5 140 85 220 40 270 S-5 400 40 450"/></svg>
+                    <svg class="roadmap-path" viewBox="0 0 1000 88" preserveAspectRatio="none" fill="none" aria-hidden="true"><path d="M166.667 44 C225 5 440 83 500 44 S775 5 833.333 44"/></svg>
                     <ol class="roadmap-list">
                         <li class="milestone completed"><div><h4>CCNA</h4><p class="milestone-status">Certified</p></div></li>
                         <li class="milestone pending"><div><h4>CCNP</h4><p class="milestone-status">In progress</p></div></li>
                         <li class="milestone pending"><div><h4>CCIE</h4><p class="milestone-status">In progress</p></div></li>
                     </ol>
                 </div>
+                </div>
             </div>
             <div class="roadmap-block reveal-item">
-                <h3>degrees/diplomas</h3>
+                <h3>Degrees / Diplomas</h3>
+                <div class="roadmap-scroll" tabindex="0" aria-label="Degrees and diplomas roadmap; scroll horizontally on small screens">
                 <div class="roadmap roadmap-degrees">
-                    <svg class="roadmap-path" viewBox="0 0 80 720" preserveAspectRatio="none" fill="none" aria-hidden="true"><path d="M40 90 C-5 140 85 220 40 270 S-5 400 40 450 S85 580 40 630"/></svg>
+                    <svg class="roadmap-path" viewBox="0 0 1000 88" preserveAspectRatio="none" fill="none" aria-hidden="true"><path d="M125 44 C180 5 320 83 375 44 S570 5 625 44 S820 83 875 44"/></svg>
                     <ol class="roadmap-list">
                         <li class="milestone completed"><div><h4>Diploma in Network Engineering</h4></div></li>
-                        <li class="milestone current"><div><h4>Higher national diploma in network engineering</h4></div></li>
+                        <li class="milestone current"><div><h4>Higher National Diploma in Network Engineering</h4></div></li>
                         <li class="milestone pending"><div><h4>BSc (Hons) Cyber Security</h4></div></li>
                         <li class="milestone pending"><div><h4>BSc (Hons) Cyber Security</h4></div></li>
                     </ol>
+                </div>
                 </div>
             </div>
             <a class="social-link qualifications-next" href="#github">The hobby projects <span aria-hidden="true">↓</span></a>
@@ -73,7 +88,7 @@
             <div class="social-content">
                 <p class="eyebrow"><span class="section-number">01 /</span> Code & curiosity</p>
                 <h2 id="github-title">GitHub<span class="title-dot">.</span></h2>
-                <p class="section-description">random hand coded slop or vibe coded slop. I'm not a software dev I do networking this is just a hobby</p>
+                <p class="section-description">Random hand coded slop or vibe coded slop. I'm not a software dev. I do networking; this is just a hobby.</p>
                 <a class="social-link" href="https://github.com/thxrul" target="_blank" rel="noopener noreferrer">Explore my GitHub <span aria-hidden="true">↗</span></a>
                 <a class="projects-jump" href="#projects">View projects <span aria-hidden="true">↓</span></a>
             </div>
