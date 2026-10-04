@@ -41,15 +41,19 @@ if ('IntersectionObserver' in window) {
     document.querySelectorAll('.social-content, .reveal-item').forEach(content => reveal.observe(content));
 }
 
-// Audio is local and starts only after a deliberate button press.
+// The generated directory index supplies file tags, embedded artwork, and track order.
 const audio = document.getElementById('site-audio');
 const audioToggle = document.getElementById('audio-toggle');
 const audioStatus = document.getElementById('audio-status');
+const audioArt = document.getElementById('audio-art');
+const audioTitle = document.getElementById('audio-title');
 let audioContext;
 let analyser;
 let frequencyData;
 let audioEnergy = 0;
 let audioBusy = false;
+let audioTracks = [];
+let trackIndex = 0;
 function syncAudioButton() {
     const playing = !audio.paused && !audio.ended;
     audioToggle.classList.toggle('is-playing', playing);
@@ -58,35 +62,88 @@ function syncAudioButton() {
     audioToggle.title = playing ? 'Pause audio' : 'Play audio';
     window.dispatchEvent(new Event('matrixchange'));
 }
-['play', 'pause', 'ended'].forEach(event => audio.addEventListener(event, syncAudioButton));
+async function ensureAudioAnalyser() {
+    const AudioEngine = window.AudioContext || window.webkitAudioContext;
+    if (!AudioEngine) return;
+    if (!audioContext) audioContext = new AudioEngine();
+    if (audioContext.state === 'suspended') await audioContext.resume();
+    // Keep native playback audible while waiting for browser audio permission.
+    if (!analyser && audioContext.state === 'running') {
+        analyser = audioContext.createAnalyser();
+        analyser.fftSize = 256;
+        analyser.smoothingTimeConstant = 0.75;
+        frequencyData = new Uint8Array(analyser.frequencyBinCount);
+        audioContext.createMediaElementSource(audio).connect(analyser);
+        analyser.connect(audioContext.destination);
+    }
+}
+async function startPlayback(manual = false) {
+    if (audioBusy) return;
+    audioBusy = true;
+    try {
+        if (manual) void ensureAudioAnalyser().catch(() => {});
+        if (audio.error) audio.load();
+        await audio.play();
+        if (!manual) void ensureAudioAnalyser().catch(() => {});
+        audioStatus.textContent = '';
+    } catch (error) {
+        audioStatus.textContent = error.name === 'NotAllowedError'
+            ? 'Your browser blocked automatic playback. Press play to listen.'
+            : 'Playback could not start. Press play to retry.';
+    } finally { audioBusy = false; syncAudioButton(); }
+}
+['play', 'pause'].forEach(event => audio.addEventListener(event, syncAudioButton));
+audio.addEventListener('ended', () => {
+    syncAudioButton();
+    if (audioTracks.length > 1) {
+        setTrack((trackIndex + 1) % audioTracks.length);
+        void startPlayback();
+    }
+});
 audio.addEventListener('error', () => {
     audioStatus.textContent = 'Audio could not load. Press play to retry.';
     syncAudioButton();
 });
-audioToggle.addEventListener('click', async () => {
-    if (audioBusy) return;
-    if (!audio.paused) { audio.pause(); return; }
-    audioBusy = true;
-    try {
-        const AudioEngine = window.AudioContext || window.webkitAudioContext;
-        if (!audioContext && AudioEngine) {
-            audioContext = new AudioEngine();
-            analyser = audioContext.createAnalyser();
-            analyser.fftSize = 256;
-            analyser.smoothingTimeConstant = 0.75;
-            frequencyData = new Uint8Array(analyser.frequencyBinCount);
-            audioContext.createMediaElementSource(audio).connect(analyser);
-            analyser.connect(audioContext.destination);
-        }
-        if (audioContext && audioContext.state === 'suspended') await audioContext.resume();
-        if (audio.error) audio.load();
-        await audio.play();
-        audioStatus.textContent = '';
-    } catch (error) {
-        audioStatus.textContent = 'Playback could not start. Press play to retry.';
-        syncAudioButton();
-    } finally { audioBusy = false; }
+audioArt.addEventListener('error', () => {
+    if (!audioArt.src.endsWith('/audio/default-cover.svg')) audioArt.src = 'audio/default-cover.svg';
 });
+audioToggle.addEventListener('click', () => {
+    if (!audio.paused) { audio.pause(); return; }
+    void startPlayback(true);
+});
+function setTrack(index) {
+    trackIndex = index;
+    const track = audioTracks[index];
+    if (!track) return;
+    const title = track.artist ? `${track.title} — ${track.artist}` : track.title;
+    audioTitle.textContent = title;
+    audioTitle.title = title;
+    audioArt.src = track.artwork || 'audio/default-cover.svg';
+    if (audio.src !== new URL(track.src, document.baseURI).href) {
+        audio.src = track.src;
+        audio.load();
+    }
+    audioEnergy = 0;
+    if (frequencyData) frequencyData.fill(0);
+    window.dispatchEvent(new Event('matrixchange'));
+}
+async function loadAudioLibrary() {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 8000);
+    try {
+        const response = await fetch('audio/library.json', { cache: 'no-store', signal: controller.signal });
+        if (!response.ok) throw new Error('Audio library unavailable');
+        const library = await response.json();
+        audioTracks = Array.isArray(library.tracks) ? library.tracks.filter(track =>
+            typeof track.src === 'string' && track.src.startsWith('audio/') && typeof track.title === 'string') : [];
+        if (audioTracks.length) setTrack(0);
+    } catch (error) {
+        // The current audio file remains usable if the index cannot be fetched.
+    } finally {
+        clearTimeout(timeout);
+        void startPlayback();
+    }
+}
 
 // The same damped spring is used for the grid and the audio's dot halo.
 function spring(dot, x, y, animate) {
@@ -102,7 +159,7 @@ const haloDots = Array.from({ length: 32 }, (_, i) => ({ angle: i * Math.PI * 2 
 function readAudio() {
     if (analyser && !audio.paused && !audio.ended) {
         analyser.getByteFrequencyData(frequencyData);
-        const energy = frequencyData.slice(0, 48).reduce((sum, value) => sum + value, 0) / (48 * 255);
+        const energy = Math.sqrt(frequencyData.slice(0, 32).reduce((sum, value) => sum + value * value, 0) / 32) / 255;
         audioEnergy += (energy - audioEnergy) * 0.25;
     } else {
         if (frequencyData) frequencyData.fill(0);
@@ -113,10 +170,14 @@ function drawHalo() {
     if (!haloContext) return;
     haloContext.clearRect(0, 0, 96, 96);
     haloDots.forEach((dot, i) => {
-        const band = frequencyData && !audio.paused ? frequencyData[2 + i * 2] / 255 : 0;
-        const pulse = motionEnabled ? band * 9 + audioEnergy * 3 : 0;
+        // Mirror the spectrum around the ring. Every dot also receives the actual
+        // track's RMS energy, so quiet high frequencies cannot freeze half the halo.
+        const mirroredIndex = Math.min(i, haloDots.length - i) / (haloDots.length / 2);
+        const bin = 1 + Math.round(mirroredIndex * mirroredIndex * 32);
+        const band = frequencyData && !audio.paused ? frequencyData[bin] / 255 : 0;
+        const pulse = motionEnabled ? band * 5 + audioEnergy * 14 : 0;
         spring(dot, Math.cos(dot.angle) * pulse, Math.sin(dot.angle) * pulse, motionEnabled);
-        haloContext.fillStyle = `rgba(235, 235, 230, ${0.42 + band * 0.5})`;
+        haloContext.fillStyle = `rgba(235, 235, 230, ${Math.min(0.95, 0.42 + audioEnergy * 0.3 + band * 0.25)})`;
         haloContext.beginPath();
         haloContext.arc(48 + Math.cos(dot.angle) * 31 + dot.dx, 48 + Math.sin(dot.angle) * 31 + dot.dy, 0.8 + band * 0.6, 0, Math.PI * 2);
         haloContext.fill();
@@ -126,7 +187,7 @@ function drawHalo() {
 const canvas = document.getElementById('dot-matrix');
 const context = canvas.getContext('2d');
 const cursor = document.getElementById('cursor');
-const weightedElements = [...document.querySelectorAll('[data-weight], .project-card, .social-content h2, .roadmap-block h3, .qualifications-heading h2, .projects-heading h2')];
+const weightedElements = [...document.querySelectorAll('[data-weight], .project-card')];
 
 // Signed distance to a circle or rounded rectangle gives each shape its own edge field.
 function edgeField(x, y, shape) {
@@ -180,8 +241,6 @@ if (context) {
             const rect = element.getBoundingClientRect();
             if (rect.bottom < -100 || rect.top > height + 100 || rect.right < -100 || rect.left > width + 100 || !rect.width || !rect.height) return [];
             const style = getComputedStyle(element);
-            // Small text never gets an independent field, including headings on narrow screens.
-            if (!element.matches('[data-weight], .project-card') && parseFloat(style.fontSize) < 28) return [];
             if (style.visibility === 'hidden' || Number(style.opacity) < 0.02) return [];
             const reveal = element.closest('.reveal-item, .social-content');
             const opacity = reveal ? Number(getComputedStyle(reveal).opacity) : 1;
@@ -272,3 +331,33 @@ if (context) {
     window.addEventListener('matrixchange', requestDraw);
     resize();
 }
+
+// Use GitHub's current public metadata; keep the last retrieved snapshot if
+// the API is offline or rate-limited. Descriptions are text, never HTML.
+async function refreshProjectDescriptions() {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 8000);
+    try {
+        const response = await fetch('https://api.github.com/users/thxrul/repos?per_page=100', {
+            signal: controller.signal,
+            headers: { Accept: 'application/vnd.github+json' }
+        });
+        if (!response.ok) throw new Error('GitHub metadata unavailable');
+        const repositories = await response.json();
+        if (!Array.isArray(repositories)) throw new Error('Invalid repository metadata');
+        document.querySelectorAll('[data-repository]').forEach(card => {
+            const repository = repositories.find(repo => repo.name === card.dataset.repository);
+            if (!repository) return;
+            const description = card.querySelector('.project-description');
+            description.textContent = typeof repository.description === 'string' && repository.description.trim()
+                ? repository.description : 'No description provided.';
+            description.dataset.descriptionSource = 'github';
+        });
+        window.dispatchEvent(new Event('matrixchange'));
+    } catch (error) {
+        // Static snapshots keep the projects useful without API access or JavaScript.
+    } finally { clearTimeout(timeout); }
+}
+refreshProjectDescriptions();
+
+loadAudioLibrary();

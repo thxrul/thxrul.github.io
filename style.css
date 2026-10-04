@@ -162,3 +162,13 @@ html.motion-reduced { scroll-behavior: auto; }
     .hero { padding-left: 18px; padding-right: 18px; }
     .qualifications-section { min-height: 130svh; }
 }
+
+.roadmap-block { border: 1px solid #eeeeea60; border-radius: 8px; padding: 32px; background: #161619e8; box-shadow: 0 12px 48px #00000033; }
+@media (max-width: 600px) { .roadmap-block { padding: 22px 16px; } }
+
+.audio-player { width: max-content; max-width: calc(100vw - 24px); display: flex; gap: 0; }
+.audio-button-wrap { width: 96px; height: 96px; position: relative; display: grid; place-items: center; flex: 0 0 96px; }
+.audio-info { display: flex; align-items: center; gap: 8px; max-width: 190px; padding: 8px 10px; border: 1px solid #eeeeea44; border-radius: 5px; background: #17171be8; }
+#audio-art { display: block; width: 24px; height: 24px; object-fit: cover; border-radius: 2px; flex-shrink: 0; }
+#audio-title { font-size: 10px; line-height: 1.4; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+@media (max-width: 600px) { .audio-info { max-width: 170px; } }

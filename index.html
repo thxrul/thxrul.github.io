@@ -6,19 +6,25 @@
     <meta name="description" content="Tharul — studying at Coventry University. A small corner of the internet.">
     <meta name="theme-color" content="#111113">
     <title>thxrul</title>
-    <link rel="stylesheet" href="style.css?v=20261005-6">
-    <script src="script.js?v=20261005-6" defer></script>
+    <link rel="stylesheet" href="style.css?v=20261005-8">
+    <script src="script.js?v=20261005-8" defer></script>
 </head>
 <body>
     <canvas id="dot-matrix" aria-hidden="true"></canvas>
     <div id="cursor" aria-hidden="true"></div>
     <div class="audio-player">
+        <div class="audio-button-wrap">
         <canvas id="audio-halo" width="96" height="96" aria-hidden="true"></canvas>
         <button id="audio-toggle" type="button" aria-label="Play audio" aria-pressed="false" title="Play audio" data-weight="circle">
             <svg class="play-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 11 7-11 7Z"/></svg>
             <svg class="pause-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5h3v14H7zm7 0h3v14h-3z"/></svg>
         </button>
-        <audio id="site-audio" src="assets/ice-zertal.mp3" preload="none"></audio>
+        </div>
+        <div class="audio-info" data-weight="rectangle">
+            <img id="audio-art" src="audio/default-cover.svg" width="24" height="24" alt="">
+            <span id="audio-title">ice — ZERTAL</span>
+        </div>
+        <audio id="site-audio" src="audio/ice-zertal.mp3?v=21f203323fe30c95" preload="metadata" autoplay></audio>
         <span id="audio-status" class="sr-only" role="status"></span>
     </div>
     <header class="site-header">
@@ -55,7 +61,7 @@
                 <p class="eyebrow">Networking comes first</p>
                 <h2 id="qualifications-title">Qualifications<span class="title-dot">.</span></h2>
             </div>
-            <div class="roadmap-block reveal-item">
+            <div class="roadmap-block reveal-item" data-weight="rectangle">
                 <h3>Cisco Certifications</h3>
                 <div class="roadmap-scroll" tabindex="0" aria-label="Cisco certifications roadmap; scroll horizontally on small screens">
                 <div class="roadmap roadmap-cisco">
@@ -68,7 +74,7 @@
                 </div>
                 </div>
             </div>
-            <div class="roadmap-block reveal-item">
+            <div class="roadmap-block reveal-item" data-weight="rectangle">
                 <h3>Degrees / Diplomas</h3>
                 <div class="roadmap-scroll" tabindex="0" aria-label="Degrees and diplomas roadmap; scroll horizontally on small screens">
                 <div class="roadmap roadmap-degrees">
@@ -76,8 +82,8 @@
                     <ol class="roadmap-list">
                         <li class="milestone completed"><div><h4>Diploma in Network Engineering</h4></div></li>
                         <li class="milestone current"><div><h4>Higher National Diploma in Network Engineering</h4></div></li>
-                        <li class="milestone pending"><div><h4>BSc (Hons) Cyber Security</h4></div></li>
-                        <li class="milestone pending"><div><h4>BSc (Hons) Cyber Security</h4></div></li>
+                        <li class="milestone pending"><div><h4>BSc (Hons) Cyber Security — Year 1</h4></div></li>
+                        <li class="milestone pending"><div><h4>BSc (Hons) Cyber Security — Year 2</h4></div></li>
                     </ol>
                 </div>
                 </div>
@@ -100,26 +106,26 @@
                 <h2 id="projects-title">Projects<span class="title-dot">.</span></h2>
             </div>
             <div class="project-grid">
-                <article class="project-card reveal-item">
+                <article class="project-card reveal-item" data-repository="curler">
                     <div class="project-meta"><span>Go</span><span>01</span></div>
                     <h3><a href="https://github.com/thxrul/curler" target="_blank" rel="noopener noreferrer">curler <span aria-hidden="true">↗</span></a></h3>
-                    <p>Simple curl based downloader written using Go.</p>
+                    <p class="project-description" data-description-source="snapshot">Simple curl based downloader written using GO</p>
                 </article>
-                <article class="project-card reveal-item" id="project-myau">
+                <article class="project-card reveal-item" data-repository="OpenMyau-Plus" id="project-myau">
                     <div class="project-warning"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 22 21H2L12 3Z"/><path d="M12 9v5m0 3v.2"/></svg><span>WIP</span></div>
                     <div class="project-meta"><span>Java / Fork</span><span>02</span></div>
                     <h3><a href="https://github.com/thxrul/OpenMyau-Plus" target="_blank" rel="noopener noreferrer">OpenMyau-Plus <span aria-hidden="true">↗</span></a></h3>
-                    <p>OpenMyau But Better.</p>
+                    <p class="project-description" data-description-source="snapshot">Experimental Minecraft Ghost Client (OpenMyau+ Fork using a lot of AI slop coding and a little bit of hand coding)</p>
                 </article>
-                <article class="project-card reveal-item">
+                <article class="project-card reveal-item" data-repository="pyDo">
                     <div class="project-meta"><span>Python</span><span>03</span></div>
                     <h3><a href="https://github.com/thxrul/pyDo" target="_blank" rel="noopener noreferrer">pyDo <span aria-hidden="true">↗</span></a></h3>
-                    <p>A simple Python to-do list app.</p>
+                    <p class="project-description" data-description-source="snapshot">simple python to-do list app.</p>
                 </article>
-                <article class="project-card reveal-item" id="project-website">
+                <article class="project-card reveal-item" data-repository="thxrul.github.io" id="project-website">
                     <div class="project-meta"><span>JavaScript</span><span>04</span></div>
                     <h3><a href="https://github.com/thxrul/thxrul.github.io" target="_blank" rel="noopener noreferrer">thxrul.github.io <span aria-hidden="true">↗</span></a></h3>
-                    <p>This corner of the internet.</p>
+                    <p class="project-description" data-description-source="snapshot">simple portfolio</p>
                 </article>
             </div>
         </section>
