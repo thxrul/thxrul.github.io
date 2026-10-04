@@ -33,12 +33,13 @@ if ('IntersectionObserver' in window) {
     const reveal = new IntersectionObserver(entries => {
         entries.forEach(entry => {
             if (entry.isIntersecting) {
-                entry.target.closest('.social-section').classList.add('is-visible');
+                const section = entry.target.closest('.social-section');
+                (section || entry.target).classList.add('is-visible');
                 reveal.unobserve(entry.target);
             }
         });
     }, { threshold: 0.01 });
-    document.querySelectorAll('.social-content').forEach(content => reveal.observe(content));
+    document.querySelectorAll('.social-content, .reveal-item').forEach(content => reveal.observe(content));
 }
 
 const canvas = document.getElementById('dot-matrix');
@@ -104,7 +105,7 @@ if (context) {
                 dot.dx = dot.dy = dot.vx = dot.vy = 0;
             }
             if (Math.abs(dot.dx) + Math.abs(dot.dy) + Math.abs(dot.vx) + Math.abs(dot.vy) > 0.05) moving = true;
-            context.fillStyle = `rgba(210, 210, 200, ${0.16 + influence * 0.45})`;
+            context.fillStyle = `rgba(210, 210, 200, ${0.32 + influence * 0.4})`;
             context.beginPath();
             context.arc(dot.x + dot.dx, dot.y + dot.dy, 0.9 + influence * 0.8, 0, Math.PI * 2);
             context.fill();

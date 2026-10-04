@@ -1,4 +1,4 @@
-:root { color-scheme: dark; --background: #090909; --text: #eeeeea; --muted: #90908b; --line: #ffffff1c; }
+:root { color-scheme: dark; --background: #202022; --text: #eeeeea; --muted: #90908b; --line: #ffffff1c; }
 * { box-sizing: border-box; }
 html { scroll-behavior: smooth; scroll-padding-top: 90px; }
 body { margin: 0; background: var(--background); color: var(--text); font-family: 'Courier New', Courier, monospace; }
@@ -64,7 +64,36 @@ html.motion-reduced { scroll-behavior: auto; }
 .motion-reduced *, .motion-reduced *::before, .motion-reduced *::after { animation: none !important; transition: none !important; }
 .motion-reduced.motion-enabled .social-content { opacity: 1; transform: none; }
 .motion-reduced #cursor { display: none; }
-#motion-toggle { position: fixed; right: 24px; bottom: 20px; z-index: 5; color: var(--muted); background: #090909e6; border: 1px solid var(--line); padding: 10px 12px; font: 10px 'Courier New', monospace; cursor: pointer; }
+#motion-toggle { position: fixed; right: 24px; bottom: 20px; z-index: 5; color: var(--muted); background: #202022e6; border: 1px solid var(--line); padding: 10px 12px; font: 10px 'Courier New', monospace; cursor: pointer; }
 #motion-toggle:hover, #motion-toggle:focus-visible { color: var(--text); border-color: var(--muted); }
 #twitter h2 a, #youtube h2 a { display: inline-block; transition: transform 250ms, color 250ms; }
 #twitter h2 a:hover, #youtube h2 a:hover { transform: translateX(8px); color: #fff; }
+
+/* A continuous line joins GitHub to its repository collection. */
+#github { overflow: visible; }
+#github::after { content: ''; position: absolute; left: 4vw; bottom: -48px; height: 130px; width: 1px; background: linear-gradient(var(--muted), var(--line)); }
+.projects-jump { display: flex; width: fit-content; gap: 24px; margin-top: 24px; font-size: 12px; color: var(--muted); transition: color 250ms; }
+.projects-jump:hover { color: var(--text); }
+.projects-section { margin: 0 8vw; padding: 80px 4vw 120px; position: relative; }
+.projects-heading h2 { font-size: clamp(40px, 6vw, 72px); margin-bottom: 48px; }
+.project-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; }
+.project-card { padding: 28px; border: 1px solid #ffffff26; background: #252527e8; border-radius: 4px; position: relative; transition: border-color 250ms, background 250ms; }
+.project-card:hover, .project-card:focus-within { border-color: #ffffff65; background: #2b2b2de8; }
+.project-meta { display: flex; justify-content: space-between; gap: 16px; color: var(--muted); font-size: 10px; letter-spacing: 1px; }
+.project-card h3 { font-size: clamp(17px, 2vw, 24px); font-weight: normal; margin: 26px 0 18px; overflow-wrap: anywhere; }
+.project-card h3 a { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; }
+.project-card h3 span { color: var(--muted); transition: transform 250ms; }
+.project-card h3 a:hover span { transform: translate(3px, -3px); }
+.project-card p { color: #b3b3ae; font-size: 12px; line-height: 1.8; margin: 0; }
+.project-warning { display: flex; align-items: center; gap: 10px; padding: 12px 16px; margin: -28px -28px 24px; background: #48252b; color: #ff9a9a; border-bottom: 1px solid #b5525266; border-radius: 4px 4px 0 0; font-size: 11px; }
+.project-warning svg { width: 18px; height: 18px; flex-shrink: 0; }
+.motion-enabled .reveal-item { opacity: 0; transform: translateY(36px); transition: opacity 800ms ease, transform 800ms cubic-bezier(.22, 1, .36, 1); }
+.motion-enabled .reveal-item.is-visible { opacity: 1; transform: translateY(0); }
+.motion-reduced.motion-enabled .reveal-item { opacity: 1; transform: none; }
+@media (max-width: 600px) {
+    #github::after { left: 4px; }
+    .projects-section { margin: 0 24px; padding: 70px 4px 80px; }
+    .project-grid { grid-template-columns: 1fr; gap: 18px; }
+    .project-card { padding: 24px; }
+    .project-warning { margin: -24px -24px 24px; }
+}

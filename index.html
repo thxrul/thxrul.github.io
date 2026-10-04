@@ -4,10 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="tharul — studying at Coventry University. A small corner of the internet.">
-    <meta name="theme-color" content="#090909">
+    <meta name="theme-color" content="#202022">
     <title>thxrul</title>
-    <link rel="stylesheet" href="style.css?v=20261005-2">
-    <script src="script.js?v=20261005-2" defer></script>
+    <link rel="stylesheet" href="style.css?v=20261005-3">
+    <script src="script.js?v=20261005-3" defer></script>
 </head>
 <body>
     <canvas id="dot-matrix" aria-hidden="true"></canvas>
@@ -44,8 +44,38 @@
                 <h2 id="github-title">GitHub<span class="title-dot">.</span></h2>
                 <p class="section-description">Things I build. Things I break. Things I figure out along the way.</p>
                 <a class="social-link" href="https://github.com/thxrul" target="_blank" rel="noopener noreferrer">Explore my GitHub <span aria-hidden="true">↗</span></a>
+                <a class="projects-jump" href="#projects">View projects <span aria-hidden="true">↓</span></a>
             </div>
             <span class="section-mark" aria-hidden="true">{ }</span>
+        </section>
+        <section class="projects-section" id="projects" aria-labelledby="projects-title">
+            <div class="projects-heading reveal-item">
+                <p class="eyebrow">From my GitHub</p>
+                <h2 id="projects-title">Projects<span class="title-dot">.</span></h2>
+            </div>
+            <div class="project-grid">
+                <article class="project-card reveal-item">
+                    <div class="project-meta"><span>Go</span><span>01</span></div>
+                    <h3><a href="https://github.com/thxrul/curler" target="_blank" rel="noopener noreferrer">curler <span aria-hidden="true">↗</span></a></h3>
+                    <p>Simple curl based downloader written using Go.</p>
+                </article>
+                <article class="project-card reveal-item" id="project-myau">
+                    <div class="project-warning"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 22 21H2L12 3Z"/><path d="M12 9v5m0 3v.2"/></svg><span>WIP — work in progress</span></div>
+                    <div class="project-meta"><span>Java / Fork</span><span>02</span></div>
+                    <h3><a href="https://github.com/thxrul/OpenMyau-Plus" target="_blank" rel="noopener noreferrer">OpenMyau-Plus <span aria-hidden="true">↗</span></a></h3>
+                    <p>OpenMyau But Better.</p>
+                </article>
+                <article class="project-card reveal-item">
+                    <div class="project-meta"><span>Python</span><span>03</span></div>
+                    <h3><a href="https://github.com/thxrul/pyDo" target="_blank" rel="noopener noreferrer">pyDo <span aria-hidden="true">↗</span></a></h3>
+                    <p>A simple Python to-do list app.</p>
+                </article>
+                <article class="project-card reveal-item" id="project-website">
+                    <div class="project-meta"><span>JavaScript</span><span>04</span></div>
+                    <h3><a href="https://github.com/thxrul/thxrul.github.io" target="_blank" rel="noopener noreferrer">thxrul.github.io <span aria-hidden="true">↗</span></a></h3>
+                    <p>This corner of the internet.</p>
+                </article>
+            </div>
         </section>
         <section class="social-section" id="twitter" aria-labelledby="twitter-title">
             <div class="social-content">
@@ -60,6 +90,6 @@
             <span class="section-mark play-mark" aria-hidden="true">▷</span>
         </section>
     </main>
-    <footer><span>thxrul / a work in progress</span><a href="#home">Back to top ↑</a></footer>
+    <footer><span>thxrul</span><a href="#home">Back to top ↑</a></footer>
 </body>
 </html>
