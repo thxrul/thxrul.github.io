@@ -105,7 +105,7 @@ if (context) {
                 dot.dx = dot.dy = dot.vx = dot.vy = 0;
             }
             if (Math.abs(dot.dx) + Math.abs(dot.dy) + Math.abs(dot.vx) + Math.abs(dot.vy) > 0.05) moving = true;
-            context.fillStyle = `rgba(210, 210, 200, ${0.32 + influence * 0.4})`;
+            context.fillStyle = `rgba(235, 235, 230, ${0.48 + influence * 0.38})`;
             context.beginPath();
             context.arc(dot.x + dot.dx, dot.y + dot.dy, 0.9 + influence * 0.8, 0, Math.PI * 2);
             context.fill();

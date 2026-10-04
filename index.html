@@ -4,10 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="tharul — studying at Coventry University. A small corner of the internet.">
-    <meta name="theme-color" content="#202022">
+    <meta name="theme-color" content="#111113">
     <title>thxrul</title>
-    <link rel="stylesheet" href="style.css?v=20261005-3">
-    <script src="script.js?v=20261005-3" defer></script>
+    <link rel="stylesheet" href="style.css?v=20261005-4">
+    <script src="script.js?v=20261005-4" defer></script>
 </head>
 <body>
     <canvas id="dot-matrix" aria-hidden="true"></canvas>
@@ -15,6 +15,7 @@
     <header class="site-header">
         <a class="wordmark" href="#home" aria-label="Back to the top">thxrul<span>_</span></a>
         <nav aria-label="Social sections">
+            <a href="#qualifications" aria-label="Go to qualifications section">00 <span>Qualifications</span></a>
             <a href="#github" aria-label="Go to GitHub section">01 <span>GitHub</span></a>
             <a href="#twitter" aria-label="Go to Twitter section">02 <span>Twitter</span></a>
             <a href="#youtube" aria-label="Go to YouTube section">03 <span>YouTube</span></a>
@@ -36,13 +37,43 @@
                     <div class="line"><span class="label">Hobbies:</span><span class="value">nerdy shit</span></div>
                 </div>
             </div>
-            <a class="scroll-hint" href="#github"><span>Keep scrolling</span><span aria-hidden="true">↓</span></a>
+            <a class="scroll-hint" href="#qualifications"><span>Keep scrolling</span><span aria-hidden="true">↓</span></a>
+        </section>
+        <section class="qualifications-section" id="qualifications" aria-labelledby="qualifications-title">
+            <div class="qualifications-heading reveal-item">
+                <p class="eyebrow">Networking comes first</p>
+                <h2 id="qualifications-title">Qualifications<span class="title-dot">.</span></h2>
+            </div>
+            <div class="roadmap-block reveal-item">
+                <h3>CISCO Certifications</h3>
+                <div class="roadmap roadmap-cisco">
+                    <svg class="roadmap-path" viewBox="0 0 80 540" preserveAspectRatio="none" fill="none" aria-hidden="true"><path d="M40 90 C-5 140 85 220 40 270 S-5 400 40 450"/></svg>
+                    <ol class="roadmap-list">
+                        <li class="milestone completed"><div><h4>CCNA</h4><p class="milestone-status">Certified</p></div></li>
+                        <li class="milestone pending"><div><h4>CCNP</h4><p class="milestone-status">In progress</p></div></li>
+                        <li class="milestone pending"><div><h4>CCIE</h4><p class="milestone-status">In progress</p></div></li>
+                    </ol>
+                </div>
+            </div>
+            <div class="roadmap-block reveal-item">
+                <h3>degrees/diplomas</h3>
+                <div class="roadmap roadmap-degrees">
+                    <svg class="roadmap-path" viewBox="0 0 80 720" preserveAspectRatio="none" fill="none" aria-hidden="true"><path d="M40 90 C-5 140 85 220 40 270 S-5 400 40 450 S85 580 40 630"/></svg>
+                    <ol class="roadmap-list">
+                        <li class="milestone completed"><div><h4>Diploma in Network Engineering</h4></div></li>
+                        <li class="milestone current"><div><h4>Higher national diploma in network engineering</h4></div></li>
+                        <li class="milestone pending"><div><h4>BSc (Hons) Cyber Security</h4></div></li>
+                        <li class="milestone pending"><div><h4>BSc (Hons) Cyber Security</h4></div></li>
+                    </ol>
+                </div>
+            </div>
+            <a class="social-link qualifications-next" href="#github">The hobby projects <span aria-hidden="true">↓</span></a>
         </section>
         <section class="social-section" id="github" aria-labelledby="github-title">
             <div class="social-content">
                 <p class="eyebrow"><span class="section-number">01 /</span> Code & curiosity</p>
                 <h2 id="github-title">GitHub<span class="title-dot">.</span></h2>
-                <p class="section-description">Things I build. Things I break. Things I figure out along the way.</p>
+                <p class="section-description">random hand coded slop or vibe coded slop. I'm not a software dev I do networking this is just a hobby</p>
                 <a class="social-link" href="https://github.com/thxrul" target="_blank" rel="noopener noreferrer">Explore my GitHub <span aria-hidden="true">↗</span></a>
                 <a class="projects-jump" href="#projects">View projects <span aria-hidden="true">↓</span></a>
             </div>
@@ -60,7 +91,7 @@
                     <p>Simple curl based downloader written using Go.</p>
                 </article>
                 <article class="project-card reveal-item" id="project-myau">
-                    <div class="project-warning"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 22 21H2L12 3Z"/><path d="M12 9v5m0 3v.2"/></svg><span>WIP — work in progress</span></div>
+                    <div class="project-warning"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 22 21H2L12 3Z"/><path d="M12 9v5m0 3v.2"/></svg><span>WIP</span></div>
                     <div class="project-meta"><span>Java / Fork</span><span>02</span></div>
                     <h3><a href="https://github.com/thxrul/OpenMyau-Plus" target="_blank" rel="noopener noreferrer">OpenMyau-Plus <span aria-hidden="true">↗</span></a></h3>
                     <p>OpenMyau But Better.</p>
