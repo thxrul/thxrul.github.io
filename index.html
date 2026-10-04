@@ -6,8 +6,8 @@
     <meta name="description" content="tharul — studying at Coventry University. A small corner of the internet.">
     <meta name="theme-color" content="#090909">
     <title>thxrul</title>
-    <link rel="stylesheet" href="style.css">
-    <script src="script.js" defer></script>
+    <link rel="stylesheet" href="style.css?v=20261005-2">
+    <script src="script.js?v=20261005-2" defer></script>
 </head>
 <body>
     <canvas id="dot-matrix" aria-hidden="true"></canvas>
@@ -20,6 +20,7 @@
             <a href="#youtube" aria-label="Go to YouTube section">03 <span>YouTube</span></a>
         </nav>
     </header>
+    <button id="motion-toggle" type="button" aria-pressed="true">Animations on</button>
     <main>
         <section class="hero" id="home" aria-labelledby="intro-title">
             <div class="container">
@@ -48,19 +49,13 @@
         </section>
         <section class="social-section" id="twitter" aria-labelledby="twitter-title">
             <div class="social-content">
-                <p class="eyebrow"><span class="section-number">02 /</span> Passing thoughts</p>
-                <h2 id="twitter-title">Twitter<span class="title-dot">.</span></h2>
-                <p class="section-description">A little noise. A little curiosity. The occasional thought.</p>
-                <a class="social-link" href="https://twitter.com/" target="_blank" rel="noopener noreferrer">Open Twitter <span aria-hidden="true">↗</span></a>
+                <h2 id="twitter-title"><a href="https://twitter.com/logout" target="_blank" rel="noopener noreferrer">Twitter</a></h2>
             </div>
             <span class="section-mark" aria-hidden="true">@</span>
         </section>
         <section class="social-section" id="youtube" aria-labelledby="youtube-title">
             <div class="social-content">
-                <p class="eyebrow"><span class="section-number">03 /</span> One more rabbit hole</p>
-                <h2 id="youtube-title">YouTube<span class="title-dot">.</span></h2>
-                <p class="section-description">Something worth watching. You know the rules.</p>
-                <a class="social-link" href="https://www.youtube.com/watch?v=dQw4w9WgXcQ" target="_blank" rel="noopener noreferrer">Press play <span aria-hidden="true">↗</span></a>
+                <h2 id="youtube-title"><a href="https://www.youtube.com/watch?v=dQw4w9WgXcQ" target="_blank" rel="noopener noreferrer">YouTube</a></h2>
             </div>
             <span class="section-mark play-mark" aria-hidden="true">▷</span>
         </section>

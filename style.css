@@ -49,7 +49,7 @@ footer { border-top: 1px solid var(--line); margin: 0 8vw; padding: 32px 0; disp
 footer a:hover { color: var(--text); }
 @keyframes blink { 50% { opacity: 0; } }
 @keyframes float { 50% { transform: translateY(6px); } }
-@media (pointer: fine) and (prefers-reduced-motion: no-preference) { #cursor { display: block; } }
+@media (any-pointer: fine) { #cursor { display: block; } }
 @media (max-width: 600px) {
     .site-header { padding: 24px; }
     nav { gap: 18px; }
@@ -60,8 +60,11 @@ footer a:hover { color: var(--text); }
     .section-mark { right: -10px; top: 35%; }
     footer { margin: 0 24px; flex-wrap: wrap; }
 }
-@media (prefers-reduced-motion: reduce) {
-    html { scroll-behavior: auto; }
-    *, *::before, *::after { animation: none !important; transition: none !important; }
-    .motion-enabled .social-content { opacity: 1; transform: none; }
-}
+html.motion-reduced { scroll-behavior: auto; }
+.motion-reduced *, .motion-reduced *::before, .motion-reduced *::after { animation: none !important; transition: none !important; }
+.motion-reduced.motion-enabled .social-content { opacity: 1; transform: none; }
+.motion-reduced #cursor { display: none; }
+#motion-toggle { position: fixed; right: 24px; bottom: 20px; z-index: 5; color: var(--muted); background: #090909e6; border: 1px solid var(--line); padding: 10px 12px; font: 10px 'Courier New', monospace; cursor: pointer; }
+#motion-toggle:hover, #motion-toggle:focus-visible { color: var(--text); border-color: var(--muted); }
+#twitter h2 a, #youtube h2 a { display: inline-block; transition: transform 250ms, color 250ms; }
+#twitter h2 a:hover, #youtube h2 a:hover { transform: translateX(8px); color: #fff; }

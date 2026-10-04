@@ -1,5 +1,27 @@
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
-const finePointer = window.matchMedia('(pointer: fine)');
+const motionToggle = document.getElementById('motion-toggle');
+let motionEnabled = !reducedMotion.matches;
+function updateMotion() {
+    document.body.classList.toggle('motion-reduced', !motionEnabled);
+    document.documentElement.classList.toggle('motion-reduced', !motionEnabled);
+    motionToggle.textContent = motionEnabled ? 'Animations on' : 'Enable animations';
+    motionToggle.setAttribute('aria-pressed', String(motionEnabled));
+}
+motionToggle.addEventListener('click', () => {
+    motionEnabled = !motionEnabled;
+    updateMotion();
+    window.dispatchEvent(new Event('motionchange'));
+});
+function listenToPreference(query, callback) {
+    if (query.addEventListener) query.addEventListener('change', callback);
+    else query.addListener(callback);
+}
+listenToPreference(reducedMotion, () => {
+    motionEnabled = !reducedMotion.matches;
+    updateMotion();
+    window.dispatchEvent(new Event('motionchange'));
+});
+updateMotion();
 const portrait = document.getElementById('pfp');
 
 // Keep a local monogram visible when the remote portrait is unavailable.
@@ -11,12 +33,12 @@ if ('IntersectionObserver' in window) {
     const reveal = new IntersectionObserver(entries => {
         entries.forEach(entry => {
             if (entry.isIntersecting) {
-                entry.target.classList.add('is-visible');
+                entry.target.closest('.social-section').classList.add('is-visible');
                 reveal.unobserve(entry.target);
             }
         });
-    }, { threshold: 0.15 });
-    document.querySelectorAll('.social-section').forEach(section => reveal.observe(section));
+    }, { threshold: 0.01 });
+    document.querySelectorAll('.social-content').forEach(content => reveal.observe(content));
 }
 
 const canvas = document.getElementById('dot-matrix');
@@ -26,7 +48,7 @@ const cursor = document.getElementById('cursor');
 if (context) {
     const spacing = 28;
     const radius = 190;
-    const pointer = { x: 0, y: 0, active: false, pressed: false };
+    const pointer = { x: 0, y: 0, active: false, pressed: false, touch: false };
     const position = { x: 0, y: 0 };
     let dots = [];
     let width = 0;
@@ -53,14 +75,14 @@ if (context) {
         if (frame === null && !document.hidden) frame = requestAnimationFrame(draw);
     }
 
-    function draw() {
+    function draw(time) {
         frame = null;
-        const interactive = !reducedMotion.matches && finePointer.matches;
+        const interactive = motionEnabled;
         const active = interactive && pointer.active;
         position.x += (pointer.x - position.x) * 0.18;
         position.y += (pointer.y - position.y) * 0.18;
         cursor.style.transform = `translate(${position.x - 18}px, ${position.y - 18}px)`;
-        cursor.style.opacity = active ? '1' : '0';
+        cursor.style.opacity = active && !pointer.touch ? '1' : '0';
         context.clearRect(0, 0, width, height);
         let moving = false;
         dots.forEach(dot => {
@@ -70,8 +92,9 @@ if (context) {
             const influence = active ? Math.max(0, 1 - distance / radius) : 0;
             // A weighted pointer pulls nearby dots inward; springs restore the grid.
             const pull = influence * influence * (pointer.pressed ? 0.55 : 0.3);
-            const targetX = offsetX * pull;
-            const targetY = offsetY * pull;
+            const drift = interactive ? Math.sin(time / 1300 + dot.x / 140 + dot.y / 180) * 1.8 : 0;
+            const targetX = offsetX * pull + drift;
+            const targetY = offsetY * pull + drift * 0.5;
             if (interactive) {
                 dot.vx = (dot.vx + (targetX - dot.dx) * 0.075) * 0.76;
                 dot.vy = (dot.vy + (targetY - dot.dy) * 0.075) * 0.76;
@@ -86,19 +109,31 @@ if (context) {
             context.arc(dot.x + dot.dx, dot.y + dot.dy, 0.9 + influence * 0.8, 0, Math.PI * 2);
             context.fill();
         });
-        if (active || moving) requestDraw();
+        if (interactive || moving) requestDraw();
     }
 
     window.addEventListener('pointermove', event => {
-        if (event.pointerType === 'touch') return;
+        pointer.touch = event.pointerType === 'touch';
         if (!pointer.active) { position.x = event.clientX; position.y = event.clientY; }
         pointer.x = event.clientX;
         pointer.y = event.clientY;
         pointer.active = true;
         requestDraw();
     }, { passive: true });
-    window.addEventListener('pointerdown', () => { pointer.pressed = true; requestDraw(); });
-    window.addEventListener('pointerup', () => { pointer.pressed = false; requestDraw(); });
+    window.addEventListener('pointerdown', event => {
+        pointer.touch = event.pointerType === 'touch';
+        pointer.x = event.clientX;
+        pointer.y = event.clientY;
+        if (!pointer.active) { position.x = pointer.x; position.y = pointer.y; }
+        pointer.active = pointer.pressed = true;
+        requestDraw();
+    }, { passive: true });
+    window.addEventListener('pointerup', () => {
+        pointer.pressed = false;
+        if (pointer.touch) pointer.active = false;
+        requestDraw();
+    }, { passive: true });
+    window.addEventListener('pointercancel', release, { passive: true });
     function release() { pointer.active = pointer.pressed = false; requestDraw(); }
     document.documentElement.addEventListener('pointerleave', release);
     window.addEventListener('blur', release);
@@ -110,7 +145,6 @@ if (context) {
             pointer.active = pointer.pressed = false;
         } else requestDraw();
     });
-    reducedMotion.addEventListener('change', requestDraw);
-    finePointer.addEventListener('change', requestDraw);
+    window.addEventListener('motionchange', requestDraw);
     resize();
 }
