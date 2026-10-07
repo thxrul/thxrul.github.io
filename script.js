@@ -236,7 +236,7 @@ const cursor = document.getElementById('cursor');
 if (context) {
     const spacing = 24;
     const pointerRadius = 190;
-    const pointer = { x: 0, y: 0, active: false, pressed: false, touch: false };
+    const pointer = { x: 0, y: 0, active: false, pressed: false, pressedAt: 0, touch: false };
     const position = { x: 0, y: 0 };
     let dots = [];
     let width = 0;
@@ -270,16 +270,20 @@ if (context) {
         position.y += (pointer.y - position.y) * 0.18;
         cursor.style.transform = `translate(${position.x - 18}px, ${position.y - 18}px)`;
         cursor.style.opacity = active && !pointer.touch ? '1' : '0';
+        const heldFor = pointer.pressed ? Math.max(0, time - pointer.pressedAt - 250) : 0;
+        const concentration = 1 - Math.exp(-heldFor / 2500);
         context.clearRect(0, 0, width, height);
         dots.forEach(dot => {
             const px = position.x - dot.x;
             const py = position.y - dot.y;
             const distance = Math.hypot(px, py);
-            const influence = active && pointer.pressed ? Math.max(0, 1 - distance / pointerRadius) : 0;
-            // A smooth radial well pulls nearby dots towards the held pointer.
-            const pull = (1 - Math.exp(-influence * 3)) * 0.88;
+            const influence = active ? Math.max(0, 1 - distance / pointerRadius) : 0;
+            // Restore the original gentle response; a sustained hold deepens the well.
+            const gentlePull = influence * influence * (pointer.pressed ? 0.55 : 0.3);
+            const gatheredPull = (1 - Math.exp(-influence * 3)) * 0.88;
+            const pull = gentlePull + (gatheredPull - gentlePull) * concentration;
             spring(dot, px * pull, py * pull, motionEnabled);
-            context.fillStyle = `rgba(235, 235, 230, ${0.48 + influence * 0.45})`;
+            context.fillStyle = `rgba(235, 235, 230, ${0.48 + influence * 0.38})`;
             context.beginPath();
             context.arc(dot.x + dot.dx, dot.y + dot.dy, 0.85 + influence * 0.7, 0, Math.PI * 2);
             context.fill();
@@ -299,16 +303,18 @@ if (context) {
         if (event.button !== 0) return;
         pointer.active = true;
         pointer.pressed = !event.target.closest('a, button, input, textarea, select');
+        pointer.pressedAt = pointer.pressed ? performance.now() : 0;
         document.body.classList.toggle('matrix-holding', pointer.pressed);
         requestDraw();
     }, { passive: true });
     window.addEventListener('pointerup', () => {
         pointer.pressed = false;
+        pointer.pressedAt = 0;
         document.body.classList.remove('matrix-holding');
         if (pointer.touch) pointer.active = false;
         requestDraw();
     }, { passive: true });
-    function release() { pointer.active = pointer.pressed = false; document.body.classList.remove('matrix-holding'); requestDraw(); }
+    function release() { pointer.active = pointer.pressed = false; pointer.pressedAt = 0; document.body.classList.remove('matrix-holding'); requestDraw(); }
     window.addEventListener('pointercancel', release, { passive: true });
     window.addEventListener('contextmenu', event => {
         if (pointer.pressed) event.preventDefault();
@@ -323,7 +329,10 @@ if (context) {
             frame = null; release();
         } else requestDraw();
     });
-    window.addEventListener('motionchange', requestDraw);
+    window.addEventListener('motionchange', () => {
+        if (!motionEnabled) release();
+        else requestDraw();
+    });
     window.addEventListener('matrixchange', requestDraw);
     resize();
 }
