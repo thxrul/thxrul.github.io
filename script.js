@@ -4,7 +4,7 @@ let motionEnabled = !reducedMotion.matches;
 function updateMotion() {
     document.body.classList.toggle('motion-reduced', !motionEnabled);
     document.documentElement.classList.toggle('motion-reduced', !motionEnabled);
-    motionToggle.textContent = motionEnabled ? 'Animations on' : 'Enable animations';
+    motionToggle.textContent = motionEnabled ? 'Animations on' : 'Animations off';
     motionToggle.setAttribute('aria-pressed', String(motionEnabled));
 }
 motionToggle.addEventListener('click', () => {
@@ -22,6 +22,7 @@ listenToPreference(reducedMotion, () => {
     window.dispatchEvent(new Event('motionchange'));
 });
 updateMotion();
+motionToggle.hidden = false;
 
 const portrait = document.getElementById('pfp');
 portrait.addEventListener('error', () => { portrait.hidden = true; });
@@ -88,7 +89,7 @@ async function startPlayback(manual = false) {
         audioStatus.textContent = '';
     } catch (error) {
         audioStatus.textContent = error.name === 'NotAllowedError'
-            ? 'Your browser blocked automatic playback. Press play to listen.'
+            ? 'Your browser blocked playback. Press play to listen.'
             : 'Playback could not start. Press play to retry.';
     } finally { audioBusy = false; syncAudioButton(); }
 }
@@ -141,7 +142,6 @@ async function loadAudioLibrary() {
         // The current audio file remains usable if the index cannot be fetched.
     } finally {
         clearTimeout(timeout);
-        void startPlayback();
     }
 }
 
@@ -169,17 +169,14 @@ function readAudio() {
 function drawHalo() {
     if (!haloContext) return;
     haloContext.clearRect(0, 0, 96, 96);
-    haloDots.forEach((dot, i) => {
-        // Mirror the spectrum around the ring. Every dot also receives the actual
-        // track's RMS energy, so quiet high frequencies cannot freeze half the halo.
-        const mirroredIndex = Math.min(i, haloDots.length - i) / (haloDots.length / 2);
-        const bin = 1 + Math.round(mirroredIndex * mirroredIndex * 32);
-        const band = frequencyData && !audio.paused ? frequencyData[bin] / 255 : 0;
-        const pulse = motionEnabled ? band * 5 + audioEnergy * 14 : 0;
+    // One smoothed RMS level drives the whole ring so every side responds equally.
+    const energy = motionEnabled ? audioEnergy : 0;
+    const pulse = energy * 12;
+    haloDots.forEach(dot => {
         spring(dot, Math.cos(dot.angle) * pulse, Math.sin(dot.angle) * pulse, motionEnabled);
-        haloContext.fillStyle = `rgba(235, 235, 230, ${Math.min(0.95, 0.42 + audioEnergy * 0.3 + band * 0.25)})`;
+        haloContext.fillStyle = `rgba(235, 235, 230, ${0.42 + energy * 0.5})`;
         haloContext.beginPath();
-        haloContext.arc(48 + Math.cos(dot.angle) * 31 + dot.dx, 48 + Math.sin(dot.angle) * 31 + dot.dy, 0.8 + band * 0.6, 0, Math.PI * 2);
+        haloContext.arc(48 + Math.cos(dot.angle) * 31 + dot.dx, 48 + Math.sin(dot.angle) * 31 + dot.dy, 0.8 + energy * 0.6, 0, Math.PI * 2);
         haloContext.fill();
     });
 }
