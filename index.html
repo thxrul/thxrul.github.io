@@ -6,8 +6,8 @@
     <meta name="description" content="Tharul — studying at Coventry University. A small corner of the internet.">
     <meta name="theme-color" content="#111113">
     <title>thxrul</title>
-    <link rel="stylesheet" href="style.css?v=20261008-1">
-    <script src="script.js?v=20261008-1" defer></script>
+    <link rel="stylesheet" href="style.css?v=20261008-2">
+    <script src="script.js?v=20261008-2" defer></script>
     <link rel="icon" type="image/jpeg" href="favicon.jpeg">
 </head>
 <body>
@@ -26,16 +26,16 @@
             <div class="audio-player">
                 <div class="audio-button-wrap">
                 <canvas id="audio-halo" width="96" height="96" aria-hidden="true"></canvas>
-                <button id="audio-toggle" type="button" aria-label="Play audio" aria-pressed="false" title="Play audio" data-weight="circle">
+                <button id="audio-toggle" type="button" aria-label="Play audio" aria-pressed="false" title="Play audio">
                     <svg class="play-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 11 7-11 7Z"/></svg>
                     <svg class="pause-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5h3v14H7zm7 0h3v14h-3z"/></svg>
                 </button>
                 </div>
-                <div class="audio-info" data-weight="rectangle">
+                <div class="audio-info">
                     <img id="audio-art" src="audio/default-cover.svg" width="24" height="24" alt="">
                     <span id="audio-title">ice — ZERTAL</span>
                 </div>
-                <audio id="site-audio" src="audio/ice-zertal.mp3?v=21f203323fe30c95" preload="none"></audio>
+                <audio id="site-audio" src="audio/ice-zertal.mp3?v=21f203323fe30c95" preload="metadata" autoplay></audio>
                 <span id="audio-status" class="sr-only" role="status"></span>
             </div>
             <button id="motion-toggle" type="button" aria-pressed="true" hidden>Animations on</button>
@@ -44,11 +44,11 @@
     <main id="main-content" tabindex="-1">
         <section class="hero" id="home" aria-labelledby="intro-title">
             <div class="container">
-                <div class="avatar" data-weight="circle">
+                <div class="avatar">
                     <span aria-hidden="true">T.</span>
                     <img id="pfp" src="https://github.com/thxrul.png?size=480" alt="Tharul's profile picture" width="224" height="224">
                 </div>
-                <div class="intro-box" data-weight="rectangle">
+                <div class="intro-box">
                 <p class="eyebrow">A small corner of the internet</p>
                 <h1 id="intro-title">Hello, I'm Tharul<span class="caret" aria-hidden="true">_</span></h1>
                 <dl id="terminal" aria-label="About Tharul">
@@ -62,10 +62,9 @@
         </section>
         <section class="qualifications-section" id="qualifications" aria-labelledby="qualifications-title">
             <div class="qualifications-heading reveal-item">
-                <p class="eyebrow">Networking comes first</p>
                 <h2 id="qualifications-title">Qualifications<span class="title-dot">.</span></h2>
             </div>
-            <div class="roadmap-block reveal-item" data-weight="rectangle">
+            <div class="roadmap-block reveal-item">
                 <h3>Cisco Certifications</h3>
                 <div class="roadmap-scroll">
                 <div class="roadmap roadmap-cisco">
@@ -78,7 +77,7 @@
                 </div>
                 </div>
             </div>
-            <div class="roadmap-block reveal-item" data-weight="rectangle">
+            <div class="roadmap-block reveal-item">
                 <h3>Degrees / Diplomas</h3>
                 <div class="roadmap-scroll">
                 <div class="roadmap roadmap-degrees">
@@ -92,7 +91,6 @@
                 </div>
                 </div>
             </div>
-            <a class="social-link qualifications-next" href="#github">The hobby projects <span aria-hidden="true">↓</span></a>
         </section>
         <section class="social-section" id="github" aria-labelledby="github-title">
             <div class="social-content">
@@ -106,9 +104,15 @@
         <section class="projects-section" id="projects" aria-labelledby="projects-title">
             <div class="projects-heading reveal-item">
                 <p class="eyebrow">From my GitHub</p>
-                <h2 id="projects-title">Projects<span class="title-dot">.</span></h2>
+                <div class="projects-title-row">
+                    <h2 id="projects-title">Projects<span class="title-dot">.</span></h2>
+                    <button id="projects-layout-toggle" type="button" aria-label="Use grid layout" title="Use grid layout" aria-pressed="false" aria-controls="project-list" hidden>
+                        <svg class="grid-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+                        <svg class="list-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5h13M8 12h13M8 19h13M3 5h1M3 12h1M3 19h1"/></svg>
+                    </button>
+                </div>
             </div>
-            <div class="project-grid">
+            <div class="project-grid" id="project-list">
                 <article class="project-card reveal-item" data-repository="curler">
                     <div class="project-meta"><span>Go</span><span>01</span></div>
                     <h3><a href="https://github.com/thxrul/curler" target="_blank" rel="noopener noreferrer">curler <span aria-hidden="true">↗</span></a></h3>

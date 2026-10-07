@@ -42,6 +42,19 @@ if ('IntersectionObserver' in window) {
     document.querySelectorAll('.social-content, .reveal-item').forEach(content => reveal.observe(content));
 }
 
+const projectsLayoutToggle = document.getElementById('projects-layout-toggle');
+const projectList = document.getElementById('project-list');
+function setProjectLayout(grid) {
+    projectList.classList.toggle('is-grid', grid);
+    projectsLayoutToggle.setAttribute('aria-pressed', String(grid));
+    projectsLayoutToggle.setAttribute('aria-label', grid ? 'Use list layout' : 'Use grid layout');
+    projectsLayoutToggle.title = grid ? 'Use list layout' : 'Use grid layout';
+    try { localStorage.setItem('project-layout', grid ? 'grid' : 'list'); } catch {}
+}
+try { setProjectLayout(localStorage.getItem('project-layout') === 'grid'); } catch {}
+projectsLayoutToggle.hidden = false;
+projectsLayoutToggle.addEventListener('click', () => setProjectLayout(!projectList.classList.contains('is-grid')));
+
 // The generated directory index supplies file tags, embedded artwork, and track order.
 const audio = document.getElementById('site-audio');
 const audioToggle = document.getElementById('audio-toggle');
@@ -51,6 +64,10 @@ const audioTitle = document.getElementById('audio-title');
 let audioContext;
 let analyser;
 let frequencyData;
+let waveformData;
+let mediaSource;
+let autoplayBlocked = false;
+let userPaused = false;
 let audioEnergy = 0;
 let audioBusy = false;
 let audioTracks = [];
@@ -71,10 +88,12 @@ async function ensureAudioAnalyser() {
     // Keep native playback audible while waiting for browser audio permission.
     if (!analyser && audioContext.state === 'running') {
         analyser = audioContext.createAnalyser();
-        analyser.fftSize = 256;
-        analyser.smoothingTimeConstant = 0.75;
+        analyser.fftSize = 1024;
+        analyser.smoothingTimeConstant = 0.65;
         frequencyData = new Uint8Array(analyser.frequencyBinCount);
-        audioContext.createMediaElementSource(audio).connect(analyser);
+        waveformData = new Uint8Array(analyser.fftSize);
+        mediaSource = audioContext.createMediaElementSource(audio);
+        mediaSource.connect(analyser);
         analyser.connect(audioContext.destination);
     }
 }
@@ -86,14 +105,21 @@ async function startPlayback(manual = false) {
         if (audio.error) audio.load();
         await audio.play();
         if (!manual) void ensureAudioAnalyser().catch(() => {});
+        autoplayBlocked = false;
         audioStatus.textContent = '';
     } catch (error) {
+        autoplayBlocked = error.name === 'NotAllowedError';
         audioStatus.textContent = error.name === 'NotAllowedError'
             ? 'Your browser blocked playback. Press play to listen.'
             : 'Playback could not start. Press play to retry.';
     } finally { audioBusy = false; syncAudioButton(); }
 }
-['play', 'pause'].forEach(event => audio.addEventListener(event, syncAudioButton));
+audio.addEventListener('play', () => {
+    autoplayBlocked = false;
+    syncAudioButton();
+    void ensureAudioAnalyser().catch(() => {});
+});
+audio.addEventListener('pause', syncAudioButton);
 audio.addEventListener('ended', () => {
     syncAudioButton();
     if (audioTracks.length > 1) {
@@ -109,9 +135,18 @@ audioArt.addEventListener('error', () => {
     if (!audioArt.src.endsWith('/audio/default-cover.svg')) audioArt.src = 'audio/default-cover.svg';
 });
 audioToggle.addEventListener('click', () => {
-    if (!audio.paused) { audio.pause(); return; }
+    if (!audio.paused) { userPaused = true; audio.pause(); return; }
+    userPaused = false;
     void startPlayback(true);
 });
+// Resume sound and its analyser on the first gesture when autoplay was blocked.
+function unlockAudio(event) {
+    if (event.target.closest('#audio-toggle')) return;
+    if (audioContext?.state === 'suspended') void ensureAudioAnalyser().catch(() => {});
+    if (autoplayBlocked && !userPaused) void startPlayback(true);
+}
+window.addEventListener('pointerdown', unlockAudio, { passive: true });
+window.addEventListener('keydown', unlockAudio);
 function setTrack(index) {
     trackIndex = index;
     const track = audioTracks[index];
@@ -142,6 +177,7 @@ async function loadAudioLibrary() {
         // The current audio file remains usable if the index cannot be fetched.
     } finally {
         clearTimeout(timeout);
+        if (audio.paused && !userPaused) void startPlayback();
     }
 }
 
@@ -159,8 +195,10 @@ const haloDots = Array.from({ length: 32 }, (_, i) => ({ angle: i * Math.PI * 2 
 function readAudio() {
     if (analyser && !audio.paused && !audio.ended) {
         analyser.getByteFrequencyData(frequencyData);
-        const energy = Math.sqrt(frequencyData.slice(0, 32).reduce((sum, value) => sum + value * value, 0) / 32) / 255;
-        audioEnergy += (energy - audioEnergy) * 0.25;
+        analyser.getByteTimeDomainData(waveformData);
+        const rms = Math.sqrt(waveformData.reduce((sum, value) => sum + ((value - 128) / 128) ** 2, 0) / waveformData.length);
+        const energy = Math.min(1, rms * 3);
+        audioEnergy += (energy - audioEnergy) * 0.3;
     } else {
         if (frequencyData) frequencyData.fill(0);
         audioEnergy *= 0.8;
@@ -169,42 +207,32 @@ function readAudio() {
 function drawHalo() {
     if (!haloContext) return;
     haloContext.clearRect(0, 0, 96, 96);
-    // One smoothed RMS level drives the whole ring so every side responds equally.
-    const energy = motionEnabled ? audioEnergy : 0;
-    const pulse = energy * 12;
-    haloDots.forEach(dot => {
-        spring(dot, Math.cos(dot.angle) * pulse, Math.sin(dot.angle) * pulse, motionEnabled);
-        haloContext.fillStyle = `rgba(235, 235, 230, ${0.42 + energy * 0.5})`;
+    // Repeat eight spectrum bands across four quadrants for a balanced circular equalizer.
+    haloDots.forEach((dot, i) => {
+        const bandIndex = Math.min(i % 16, 15 - i % 16);
+        const start = Math.round(2 ** (bandIndex * 0.8));
+        const end = Math.min(frequencyData?.length || 0, Math.max(start + 1, Math.round(2 ** ((bandIndex + 1) * 0.8))));
+        let band = 0;
+        if (frequencyData && !audio.paused) {
+            for (let bin = start; bin < end; bin++) band += frequencyData[bin] / 255;
+            band /= end - start;
+        }
+        const energy = motionEnabled ? Math.min(1, band * 0.65 + audioEnergy * 0.6) : 0;
+        spring(dot, energy * 10, 0, motionEnabled);
+        const radius = 31;
+        haloContext.strokeStyle = `rgba(235, 235, 230, ${0.45 + energy * 0.5})`;
+        haloContext.lineWidth = 1.6;
+        haloContext.lineCap = 'round';
         haloContext.beginPath();
-        haloContext.arc(48 + Math.cos(dot.angle) * 31 + dot.dx, 48 + Math.sin(dot.angle) * 31 + dot.dy, 0.8 + energy * 0.6, 0, Math.PI * 2);
-        haloContext.fill();
+        haloContext.moveTo(48 + Math.cos(dot.angle) * radius, 48 + Math.sin(dot.angle) * radius);
+        haloContext.lineTo(48 + Math.cos(dot.angle) * (radius + 2 + dot.dx), 48 + Math.sin(dot.angle) * (radius + 2 + dot.dx));
+        haloContext.stroke();
     });
 }
 
 const canvas = document.getElementById('dot-matrix');
 const context = canvas.getContext('2d');
 const cursor = document.getElementById('cursor');
-const weightedElements = [...document.querySelectorAll('[data-weight], .project-card')];
-
-// Signed distance to a circle or rounded rectangle gives each shape its own edge field.
-function edgeField(x, y, shape) {
-    const dx = x - shape.cx;
-    const dy = y - shape.cy;
-    if (shape.circle) {
-        const length = Math.hypot(dx, dy) || 1;
-        return { distance: length - shape.w / 2, x: dx / length, y: dy / length };
-    }
-    const corner = Math.min(shape.corner, shape.w / 2, shape.h / 2);
-    const qx = Math.abs(dx) - (shape.w / 2 - corner);
-    const qy = Math.abs(dy) - (shape.h / 2 - corner);
-    const ox = Math.max(qx, 0);
-    const oy = Math.max(qy, 0);
-    const length = Math.hypot(ox, oy);
-    const distance = length + Math.min(Math.max(qx, qy), 0) - corner;
-    if (length) return { distance, x: Math.sign(dx) * ox / length, y: Math.sign(dy) * oy / length };
-    return qx > qy ? { distance, x: Math.sign(dx) || 1, y: 0 } : { distance, x: 0, y: Math.sign(dy) || 1 };
-}
-
 if (context) {
     const spacing = 24;
     const pointerRadius = 190;
@@ -233,32 +261,10 @@ if (context) {
     function requestDraw() {
         if (frame === null && !document.hidden) frame = requestAnimationFrame(draw);
     }
-    function collectShapes() {
-        return weightedElements.flatMap(element => {
-            const rect = element.getBoundingClientRect();
-            if (rect.bottom < -100 || rect.top > height + 100 || rect.right < -100 || rect.left > width + 100 || !rect.width || !rect.height) return [];
-            const style = getComputedStyle(element);
-            if (style.visibility === 'hidden' || Number(style.opacity) < 0.02) return [];
-            const reveal = element.closest('.reveal-item, .social-content');
-            const opacity = reveal ? Number(getComputedStyle(reveal).opacity) : 1;
-            if (opacity < 0.02) return [];
-            // Ignore roadmap labels outside their horizontally clipped container.
-            const scroll = element.closest('.roadmap-scroll');
-            if (scroll) {
-                const clip = scroll.getBoundingClientRect();
-                if (rect.right < clip.left || rect.left > clip.right) return [];
-            }
-            return [{ cx: rect.left + rect.width / 2, cy: rect.top + rect.height / 2, w: rect.width, h: rect.height,
-                circle: element.dataset.weight === 'circle', corner: parseFloat(style.borderRadius) || 4,
-                mass: Math.min(32, 5 + Math.sqrt(rect.width * rect.height) / 12) * opacity,
-                audio: element === audioToggle }];
-        });
-    }
     function draw(time) {
         frame = null;
         readAudio();
         drawHalo();
-        const shapes = collectShapes();
         const active = motionEnabled && pointer.active;
         position.x += (pointer.x - position.x) * 0.18;
         position.y += (pointer.y - position.y) * 0.18;
@@ -268,24 +274,12 @@ if (context) {
         dots.forEach(dot => {
             const px = position.x - dot.x;
             const py = position.y - dot.y;
-            const influence = active ? Math.max(0, 1 - Math.hypot(px, py) / pointerRadius) : 0;
-            const pull = influence * influence * (pointer.pressed ? 0.55 : 0.3);
-            const drift = motionEnabled ? Math.sin(time / 1300 + dot.x / 140 + dot.y / 180) * 1.4 : 0;
-            let targetX = px * pull + drift;
-            let targetY = py * pull + drift * 0.5;
-            let edgeGlow = 0;
-            shapes.forEach(shape => {
-                if (Math.abs(dot.x - shape.cx) > shape.w / 2 + 100 || Math.abs(dot.y - shape.cy) > shape.h / 2 + 100) return;
-                const field = edgeField(dot.x, dot.y, shape);
-                const influence = Math.exp(-Math.abs(field.distance) / 38);
-                const audioPulse = shape.audio && motionEnabled ? audioEnergy * 28 : 0;
-                const force = influence * (shape.mass + audioPulse);
-                targetX += field.x * force;
-                targetY += field.y * force;
-                edgeGlow = Math.max(edgeGlow, influence * (shape.audio ? audioEnergy : 0.15));
-            });
-            spring(dot, Math.max(-65, Math.min(65, targetX)), Math.max(-65, Math.min(65, targetY)), motionEnabled);
-            context.fillStyle = `rgba(235, 235, 230, ${Math.min(0.95, 0.48 + influence * 0.38 + edgeGlow)})`;
+            const distance = Math.hypot(px, py);
+            const influence = active && pointer.pressed ? Math.max(0, 1 - distance / pointerRadius) : 0;
+            // A smooth radial well pulls nearby dots towards the held pointer.
+            const pull = (1 - Math.exp(-influence * 3)) * 0.88;
+            spring(dot, px * pull, py * pull, motionEnabled);
+            context.fillStyle = `rgba(235, 235, 230, ${0.48 + influence * 0.45})`;
             context.beginPath();
             context.arc(dot.x + dot.dx, dot.y + dot.dy, 0.85 + influence * 0.7, 0, Math.PI * 2);
             context.fill();
@@ -302,26 +296,31 @@ if (context) {
         pointer.touch = event.pointerType === 'touch';
         pointer.x = event.clientX; pointer.y = event.clientY;
         if (!pointer.active) { position.x = pointer.x; position.y = pointer.y; }
-        pointer.active = pointer.pressed = true;
+        if (event.button !== 0) return;
+        pointer.active = true;
+        pointer.pressed = !event.target.closest('a, button, input, textarea, select');
+        document.body.classList.toggle('matrix-holding', pointer.pressed);
         requestDraw();
     }, { passive: true });
     window.addEventListener('pointerup', () => {
         pointer.pressed = false;
+        document.body.classList.remove('matrix-holding');
         if (pointer.touch) pointer.active = false;
         requestDraw();
     }, { passive: true });
-    function release() { pointer.active = pointer.pressed = false; requestDraw(); }
+    function release() { pointer.active = pointer.pressed = false; document.body.classList.remove('matrix-holding'); requestDraw(); }
     window.addEventListener('pointercancel', release, { passive: true });
+    window.addEventListener('contextmenu', event => {
+        if (pointer.pressed) event.preventDefault();
+    });
     document.documentElement.addEventListener('pointerleave', release);
     window.addEventListener('blur', release);
     window.addEventListener('resize', resize, { passive: true });
-    // Static weight fields still follow the page when reduced motion is enabled.
     window.addEventListener('scroll', requestDraw, { passive: true });
-    document.querySelectorAll('.roadmap-scroll').forEach(element => element.addEventListener('scroll', requestDraw, { passive: true }));
     document.addEventListener('visibilitychange', () => {
         if (document.hidden) {
             if (frame !== null) cancelAnimationFrame(frame);
-            frame = null; pointer.active = pointer.pressed = false;
+            frame = null; release();
         } else requestDraw();
     });
     window.addEventListener('motionchange', requestDraw);
@@ -358,3 +357,4 @@ async function refreshProjectDescriptions() {
 refreshProjectDescriptions();
 
 loadAudioLibrary();
+void startPlayback();
