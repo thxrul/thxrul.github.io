@@ -28,18 +28,64 @@ const portrait = document.getElementById('pfp');
 portrait.addEventListener('error', () => { portrait.hidden = true; });
 if (portrait.complete && portrait.naturalWidth === 0) portrait.hidden = true;
 
+// Reserve the complete greeting's layout and reveal letters without moving the page.
+const greeting = document.querySelector('.greeting');
+const greetingLines = greeting.querySelectorAll('.greeting-line');
+let letterIndex = 0;
+greetingLines.forEach(line => {
+    const text = line.firstChild;
+    const fragment = document.createDocumentFragment();
+    for (const character of text.textContent) {
+        const letter = document.createElement('span');
+        letter.className = 'greeting-letter';
+        letter.textContent = character === ' ' ? '\u00a0' : character;
+        letter.style.setProperty('--letter-delay', `${300 + letterIndex++ * 115}ms`);
+        fragment.appendChild(letter);
+    }
+    text.replaceWith(fragment);
+});
+if (motionEnabled) document.body.classList.add('intro-animating');
+const finishIntro = () => document.body.classList.remove('intro-animating');
+const greetingLetters = greeting.querySelectorAll('.greeting-letter');
+greeting.addEventListener('animationend', event => {
+    if (event.target === greetingLetters[greetingLetters.length - 1]) finishIntro();
+});
+// Also finish if a visitor leaves the tab or turns animations off mid-greeting.
+window.addEventListener('motionchange', () => { if (!motionEnabled) finishIntro(); });
+document.addEventListener('visibilitychange', () => { if (document.hidden) finishIntro(); });
+
 if ('IntersectionObserver' in window) {
     document.body.classList.add('motion-enabled');
+    const revealTargets = [...document.querySelectorAll('.social-content, .reveal-item')];
+    function showContent(target) {
+        target.classList.remove('reveal-pending');
+        target.classList.add('is-visible');
+    }
     const reveal = new IntersectionObserver(entries => {
         entries.forEach(entry => {
             if (entry.isIntersecting) {
-                const section = entry.target.closest('.social-section');
-                (section || entry.target).classList.add('is-visible');
+                showContent(entry.target);
                 reveal.unobserve(entry.target);
             }
         });
-    }, { threshold: 0.01 });
-    document.querySelectorAll('.social-content, .reveal-item').forEach(content => reveal.observe(content));
+    }, { threshold: 0.08, rootMargin: '0px 0px -32px 0px' });
+    revealTargets.forEach(target => {
+        // Content in view stays readable; offscreen items morph in on approach.
+        if (motionEnabled && target.getBoundingClientRect().top >= window.innerHeight - 32) {
+            target.classList.add('reveal-pending');
+        }
+        reveal.observe(target);
+    });
+    document.addEventListener('focusin', event => {
+        const target = event.target.closest('.reveal-pending');
+        if (target) { showContent(target); reveal.unobserve(target); }
+    });
+    window.addEventListener('motionchange', () => {
+        if (!motionEnabled) {
+            revealTargets.forEach(showContent);
+            reveal.disconnect();
+        }
+    });
 }
 
 const projectsLayoutToggle = document.getElementById('projects-layout-toggle');
@@ -63,7 +109,6 @@ const audioArt = document.getElementById('audio-art');
 const audioTitle = document.getElementById('audio-title');
 let audioContext;
 let analyser;
-let frequencyData;
 let waveformData;
 let mediaSource;
 let autoplayBlocked = false;
@@ -90,7 +135,6 @@ async function ensureAudioAnalyser() {
         analyser = audioContext.createAnalyser();
         analyser.fftSize = 1024;
         analyser.smoothingTimeConstant = 0.65;
-        frequencyData = new Uint8Array(analyser.frequencyBinCount);
         waveformData = new Uint8Array(analyser.fftSize);
         mediaSource = audioContext.createMediaElementSource(audio);
         mediaSource.connect(analyser);
@@ -160,7 +204,6 @@ function setTrack(index) {
         audio.load();
     }
     audioEnergy = 0;
-    if (frequencyData) frequencyData.fill(0);
     window.dispatchEvent(new Event('matrixchange'));
 }
 async function loadAudioLibrary() {
@@ -191,33 +234,28 @@ function spring(dot, x, y, animate) {
 }
 const halo = document.getElementById('audio-halo');
 const haloContext = halo.getContext('2d');
-const haloDots = Array.from({ length: 32 }, (_, i) => ({ angle: i * Math.PI * 2 / 32, dx: 0, dy: 0, vx: 0, vy: 0 }));
+const haloSensitivities = [0.45, 1.15, 0.7, 1.65, 0.9, 1.4, 0.55, 1.9];
+const haloDots = Array.from({ length: 32 }, (_, i) => ({
+    angle: i * Math.PI * 2 / 32, sensitivity: haloSensitivities[Math.min(i % 16, 15 - i % 16)],
+    dx: 0, dy: 0, vx: 0, vy: 0
+}));
 function readAudio() {
     if (analyser && !audio.paused && !audio.ended) {
-        analyser.getByteFrequencyData(frequencyData);
         analyser.getByteTimeDomainData(waveformData);
         const rms = Math.sqrt(waveformData.reduce((sum, value) => sum + ((value - 128) / 128) ** 2, 0) / waveformData.length);
-        const energy = Math.min(1, rms * 3);
+        const energy = rms;
         audioEnergy += (energy - audioEnergy) * 0.3;
     } else {
-        if (frequencyData) frequencyData.fill(0);
         audioEnergy *= 0.8;
     }
 }
 function drawHalo() {
     if (!haloContext) return;
     haloContext.clearRect(0, 0, 96, 96);
-    // Repeat eight spectrum bands across four quadrants for a balanced circular equalizer.
-    haloDots.forEach((dot, i) => {
-        const bandIndex = Math.min(i % 16, 15 - i % 16);
-        const start = Math.round(2 ** (bandIndex * 0.8));
-        const end = Math.min(frequencyData?.length || 0, Math.max(start + 1, Math.round(2 ** ((bandIndex + 1) * 0.8))));
-        let band = 0;
-        if (frequencyData && !audio.paused) {
-            for (let bin = start; bin < end; bin++) band += frequencyData[bin] / 255;
-            band /= end - start;
-        }
-        const energy = motionEnabled ? Math.min(1, band * 0.65 + audioEnergy * 0.6) : 0;
+    // Every bar reads the same loudness envelope, with its own sensitivity.
+    // A soft response curve preserves differences even during loud passages.
+    haloDots.forEach(dot => {
+        const energy = motionEnabled ? 1 - Math.exp(-audioEnergy * dot.sensitivity * 4) : 0;
         spring(dot, energy * 10, 0, motionEnabled);
         const radius = 31;
         haloContext.strokeStyle = `rgba(235, 235, 230, ${0.45 + energy * 0.5})`;

@@ -6,8 +6,8 @@
     <meta name="description" content="Tharul — studying at Coventry University. A small corner of the internet.">
     <meta name="theme-color" content="#111113">
     <title>thxrul</title>
-    <link rel="stylesheet" href="style.css?v=20261008-3">
-    <script src="script.js?v=20261008-3" defer></script>
+    <link rel="stylesheet" href="style.css?v=20261014-1">
+    <script src="script.js?v=20261014-1" defer></script>
     <link rel="icon" type="image/jpeg" href="favicon.jpeg">
 </head>
 <body>
@@ -46,19 +46,21 @@
             <div class="container">
                 <div class="avatar">
                     <span aria-hidden="true">T.</span>
-                    <img id="pfp" src="https://github.com/thxrul.png?size=480" alt="Tharul's profile picture" width="224" height="224">
+                    <img id="pfp" src="https://github.com/thxrul.png?size=720" alt="Tharul's profile picture" width="360" height="360">
                 </div>
-                <div class="intro-box">
-                <p class="eyebrow">A small corner of the internet</p>
-                <h1 id="intro-title">Hello, I'm Tharul<span class="caret" aria-hidden="true">_</span></h1>
-                <dl id="terminal" aria-label="About Tharul">
-                    <div class="line"><dt class="label">Name:</dt><dd class="value">Tharul</dd></div>
-                    <div class="line"><dt class="label">Studying at:</dt><dd class="value"><a class="university" href="https://www.coventry.ac.uk/" target="_blank" rel="noopener noreferrer">Coventry University <span aria-hidden="true">↗</span></a></dd></div>
-                    <div class="line"><dt class="label">Hobbies:</dt><dd class="value">Nerdy shit</dd></div>
-                </dl>
+                <div class="hero-copy">
+                    <p class="eyebrow">A small corner of the internet</p>
+                    <h1 id="intro-title"><span class="sr-only">Hello, I'm Tharul</span><span class="greeting" aria-hidden="true"><span class="greeting-line">Hello,</span><span class="greeting-line">I'm Tharul<span class="caret">_</span></span></span></h1>
                 </div>
             </div>
-            <a class="scroll-hint" href="#qualifications"><span>Keep scrolling</span><span aria-hidden="true">↓</span></a>
+            <a class="scroll-hint" href="#about"><span>Keep scrolling</span><span aria-hidden="true">↓</span></a>
+        </section>
+        <section class="about-section" id="about" aria-label="About Tharul">
+            <dl id="terminal">
+                <div class="line reveal-item"><dt class="label">Name:</dt><dd class="value">Tharul</dd></div>
+                <div class="line reveal-item"><dt class="label">Studying at:</dt><dd class="value"><a class="university" href="https://www.coventry.ac.uk/" target="_blank" rel="noopener noreferrer">Coventry University <span aria-hidden="true">↗</span></a></dd></div>
+                <div class="line reveal-item"><dt class="label">Hobbies:</dt><dd class="value">Nerdy shit</dd></div>
+            </dl>
         </section>
         <section class="qualifications-section" id="qualifications" aria-labelledby="qualifications-title">
             <div class="qualifications-heading reveal-item">
