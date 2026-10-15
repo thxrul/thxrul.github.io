@@ -88,6 +88,100 @@ if ('IntersectionObserver' in window) {
     });
 }
 
+
+// Type each section heading once when it reaches the viewport.
+const typedHeadings = [...document.querySelectorAll('h2')];
+typedHeadings.forEach(heading => {
+    heading.classList.add('type-heading');
+    heading.setAttribute('aria-label', heading.textContent.trim());
+    heading.querySelectorAll('a').forEach(link => link.setAttribute('aria-label', link.textContent.trim()));
+    const textNodes = [];
+    const walker = document.createTreeWalker(heading, NodeFilter.SHOW_TEXT);
+    while (walker.nextNode()) textNodes.push(walker.currentNode);
+    let index = 0;
+    textNodes.forEach(node => {
+        const fragment = document.createDocumentFragment();
+        for (const character of node.textContent) {
+            const letter = document.createElement('span');
+            letter.className = 'heading-letter';
+            letter.setAttribute('aria-hidden', 'true');
+            letter.textContent = character === ' ' ? '\u00a0' : character;
+            letter.style.setProperty('--letter-delay', `${300 + index++ * 115}ms`);
+            fragment.appendChild(letter);
+        }
+        node.replaceWith(fragment);
+    });
+    heading.addEventListener('animationend', event => {
+        const letters = heading.querySelectorAll('.heading-letter');
+        if (event.target === letters[letters.length - 1]) heading.classList.remove('is-typing');
+    });
+});
+function completeHeading(heading) {
+    heading.classList.add('is-typed');
+    heading.classList.remove('is-typing');
+}
+if ('IntersectionObserver' in window && motionEnabled) {
+    const headingObserver = new IntersectionObserver(entries => {
+        entries.forEach(entry => {
+            if (!entry.isIntersecting) return;
+            entry.target.classList.add('is-typed', 'is-typing');
+            headingObserver.unobserve(entry.target);
+        });
+    }, { threshold: 0.1, rootMargin: '0px 0px -24px 0px' });
+    typedHeadings.forEach(heading => headingObserver.observe(heading));
+    window.addEventListener('motionchange', () => {
+        if (!motionEnabled) { typedHeadings.forEach(completeHeading); headingObserver.disconnect(); }
+    });
+    document.addEventListener('focusin', event => {
+        const heading = event.target.closest('.type-heading');
+        if (heading) { completeHeading(heading); headingObserver.unobserve(heading); }
+    });
+} else typedHeadings.forEach(completeHeading);
+
+// Read progress directly from scroll position, batching updates to one per frame.
+const progressTrack = document.getElementById('scroll-progress');
+let progressFrame = null;
+function updateScrollProgress() {
+    progressFrame = null;
+    const range = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+    const progress = range > 0 ? Math.min(1, Math.max(0, window.scrollY / range)) : 0;
+    progressTrack.style.setProperty('--scroll-progress', String(progress));
+}
+function requestProgressUpdate() {
+    if (progressFrame === null) progressFrame = requestAnimationFrame(updateScrollProgress);
+}
+progressTrack.hidden = false;
+window.addEventListener('scroll', requestProgressUpdate, { passive: true });
+window.addEventListener('resize', requestProgressUpdate, { passive: true });
+window.addEventListener('load', requestProgressUpdate);
+if ('ResizeObserver' in window) new ResizeObserver(requestProgressUpdate).observe(document.body);
+updateScrollProgress();
+
+// Local coordinates let the highlight follow the border without affecting content.
+document.querySelectorAll('.project-card, .roadmap-block, .project-warning, .avatar, #audio-toggle, #motion-toggle, #projects-layout-toggle, .contact-button').forEach(box => {
+    let latestPoint = null;
+    let spotFrame = null;
+    const updateSpotlight = () => {
+        spotFrame = null;
+        if (!latestPoint) return;
+        const rect = box.getBoundingClientRect();
+        box.style.setProperty('--spot-x', `${latestPoint.x - rect.left}px`);
+        box.style.setProperty('--spot-y', `${latestPoint.y - rect.top}px`);
+    };
+    box.addEventListener('pointermove', event => {
+        if (!motionEnabled || event.pointerType === 'touch') return;
+        latestPoint = { x: event.clientX, y: event.clientY };
+        if (spotFrame === null) spotFrame = requestAnimationFrame(updateSpotlight);
+    }, { passive: true });
+    box.addEventListener('pointerleave', () => {
+        latestPoint = null;
+        if (spotFrame !== null) cancelAnimationFrame(spotFrame);
+        spotFrame = null;
+        box.style.removeProperty('--spot-x');
+        box.style.removeProperty('--spot-y');
+    });
+});
+
 const projectsLayoutToggle = document.getElementById('projects-layout-toggle');
 const projectList = document.getElementById('project-list');
 function setProjectLayout(grid) {
