@@ -1,0 +1,43 @@
+[
+  {
+    "id": "curler",
+    "name": "curler",
+    "language": "Go",
+    "symbol": "Go",
+    "url": "https://github.com/thxrul/curler",
+    "description": [
+      "Simple curl based downloader written using GO"
+    ]
+  },
+  {
+    "id": "OpenMyau-Plus",
+    "name": "OpenMyau-Plus",
+    "language": "Java / Fork",
+    "symbol": "Jv",
+    "status": "Work in progress",
+    "url": "https://github.com/thxrul/OpenMyau-Plus",
+    "description": [
+      "Experimental Minecraft Ghost Client (OpenMyau+ Fork using a lot of AI slop coding and a little bit of hand coding)"
+    ]
+  },
+  {
+    "id": "pyDo",
+    "name": "pyDo",
+    "language": "Python",
+    "symbol": "Py",
+    "url": "https://github.com/thxrul/pyDo",
+    "description": [
+      "simple python to-do list app."
+    ]
+  },
+  {
+    "id": "thxrul.github.io",
+    "name": "thxrul.github.io",
+    "language": "JavaScript",
+    "symbol": "JS",
+    "url": "https://github.com/thxrul/thxrul.github.io",
+    "description": [
+      "simple portfolio"
+    ]
+  }
+]

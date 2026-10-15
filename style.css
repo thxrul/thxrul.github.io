@@ -5,9 +5,9 @@ html { scroll-behavior: smooth; scroll-padding-top: 24px; }
 body { margin: 0; background: var(--background); color: var(--text); font-family: 'Courier New', Courier, monospace; line-height: 1.6; position: relative; isolation: isolate; }
 ::selection { background: var(--text); color: var(--background); }
 a { color: inherit; text-decoration: none; position: relative; isolation: isolate; }
-a:not(.skip-link):not(.contact-button)::before { content: ''; position: absolute; inset: auto 0 .12em; height: 1px; z-index: 0; background: #fff; transform: scaleX(0); transform-origin: left; transition: transform 240ms cubic-bezier(.22, 1, .36, 1); pointer-events: none; }
+a:not(.skip-link):not(.contact-button)::before { content: ''; position: absolute; top: 0; bottom: 0; left: var(--link-x, 50%); width: 2px; z-index: 0; background: #fff; opacity: 0; transform: scaleY(0); transform-origin: bottom; transition: transform 180ms ease, opacity 180ms ease; pointer-events: none; }
 a .link-ink { display: inline-flex; align-items: inherit; justify-content: inherit; gap: inherit; width: 100%; min-width: 0; position: relative; z-index: 1; }
-a:is(:hover, :focus-visible)::before { transform: scaleX(1); }
+a:is(:hover, :focus-visible):not(.skip-link):not(.contact-button)::before { opacity: 1; transform: scaleY(1); }
 a:is(:hover, :focus-visible) .link-ink { color: #fff; mix-blend-mode: difference; }
 a:is(:hover, :focus-visible) .link-ink > span { color: inherit; }
 button { font: inherit; cursor: pointer; }
@@ -203,4 +203,34 @@ footer { padding-bottom: calc(92px + env(safe-area-inset-bottom)); }
 
 @supports not ((mask-composite: exclude) or (-webkit-mask-composite: xor)) {
     .project-card::after, .roadmap-block::after, .project-warning::after, .avatar::after, #audio-toggle::after, #motion-toggle::after, #projects-layout-toggle::after, .contact-button::after { display: none; }
+}
+
+/* A narrow upright beam follows the pointer and inverts only its overlap. */
+.project-entry { min-width: 0; }
+.project-dialog-trigger { width: 100%; text-align: left; color: var(--text); font: inherit; display: grid; grid-template-columns: 44px minmax(0, 1fr) 20px; align-items: center; gap: 16px; padding: 20px; }
+.project-trigger-copy { min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
+.project-trigger-name { display: block; font-size: clamp(16px, 2vw, 22px); line-height: 1.5; overflow-wrap: anywhere; }
+.project-trigger-meta { display: block; font-size: 12px; line-height: 1.6; color: var(--muted); }
+.project-expand-mark { font-size: 24px; color: var(--muted); text-align: right; }
+.project-symbol { display: inline-grid; place-items: center; width: 44px; height: 44px; flex-shrink: 0; border: 1px solid #ffffff26; border-radius: 8px; background: #ffffff05; color: var(--text); font-size: 16px; letter-spacing: -1px; }
+.project-symbol-large { width: 144px; height: 144px; font-size: 48px; border-radius: 24px; background: #ffffff03; }
+.project-dialog-overlay { position: fixed; inset: 0; z-index: 50; padding: 24px; display: grid; place-items: center; background: #000000a3; -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px); }
+.project-dialog-panel { width: min(100%, 500px); min-width: 0; max-height: min(90svh, 900px); position: relative; background: #141416eb; border: 1px solid #ffffff38; box-shadow: 0 24px 100px #00000080; -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
+.project-dialog-scroll { padding: 32px; max-height: min(90svh, 900px); overflow: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: #66666a transparent; border-radius: inherit; }
+.project-dialog-art { display: flex; justify-content: center; padding: 32px 0 40px; }
+.project-dialog-title { margin: 0 0 8px; font-size: 28px; line-height: 1.4; font-weight: normal; overflow-wrap: anywhere; }
+.project-dialog-meta { color: var(--muted); font-size: 13px; line-height: 1.6; }
+.project-dialog-description { margin-top: 24px; font-size: 15px; line-height: 1.9; color: #c2c2bc; overflow-wrap: anywhere; }
+.project-dialog-description p { margin: 0 0 18px; white-space: pre-wrap; }
+.project-repository-link { display: inline-flex; align-items: center; gap: 20px; min-height: 44px; font-size: 14px; }
+.project-dialog-close { position: absolute; top: 12px; right: 12px; display: grid; place-items: center; width: 44px; height: 44px; padding: 10px; color: var(--text); background: #141416d9; border: 1px solid #ffffff26; border-radius: 50%; z-index: 5; }
+.project-dialog-close svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.5; }
+.project-dialog-close:hover { border-color: #ffffff80; }
+.project-dialog-panel::after { content: ''; position: absolute; inset: -1px; padding: 1px; border-radius: inherit; pointer-events: none; z-index: 3; background: radial-gradient(180px circle at var(--spot-x, 50%) var(--spot-y, 0%), #ffffffa6, transparent 70%); -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0); mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0); -webkit-mask-composite: xor; mask-composite: exclude; }
+@media (max-width: 480px) {
+ .project-dialog-trigger { gap: 12px; padding: 18px; grid-template-columns: 40px minmax(0, 1fr) 16px; }
+ .project-symbol:not(.project-symbol-large) { width: 40px; height: 40px; }
+ .project-dialog-overlay { padding: 16px; }
+ .project-dialog-scroll { padding: 24px; }
+ .project-dialog-title { font-size: 24px; }
 }

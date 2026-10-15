@@ -469,33 +469,19 @@ if (context) {
     resize();
 }
 
-// Use GitHub's current public metadata; keep the last retrieved snapshot if
-// the API is offline or rate-limited. Descriptions are text, never HTML.
-async function refreshProjectDescriptions() {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 8000);
-    try {
-        const response = await fetch('https://api.github.com/users/thxrul/repos?per_page=100', {
-            signal: controller.signal,
-            headers: { Accept: 'application/vnd.github+json' }
-        });
-        if (!response.ok) throw new Error('GitHub metadata unavailable');
-        const repositories = await response.json();
-        if (!Array.isArray(repositories)) throw new Error('Invalid repository metadata');
-        document.querySelectorAll('[data-repository]').forEach(card => {
-            const repository = repositories.find(repo => repo.name === card.dataset.repository);
-            if (!repository) return;
-            const description = card.querySelector('.project-description');
-            description.textContent = typeof repository.description === 'string' && repository.description.trim()
-                ? repository.description : 'No description provided.';
-            description.dataset.descriptionSource = 'github';
-        });
-        window.dispatchEvent(new Event('matrixchange'));
-    } catch (error) {
-        // Static snapshots keep the projects useful without API access or JavaScript.
-    } finally { clearTimeout(timeout); }
-}
-refreshProjectDescriptions();
-
 loadAudioLibrary();
 void startPlayback();
+
+// Keep the slim white beam under the pointer, including links inside dialog portals.
+function positionLinkHighlight(event) {
+    const link = event.target.closest('a:not(.skip-link):not(.contact-button)');
+    if (!link || event.pointerType === 'touch') return;
+    const rect = link.getBoundingClientRect();
+    link.style.setProperty('--link-x', `${Math.max(0, Math.min(rect.width - 2, event.clientX - rect.left))}px`);
+}
+document.addEventListener('pointerover', positionLinkHighlight, { passive: true });
+document.addEventListener('pointermove', positionLinkHighlight, { passive: true });
+document.addEventListener('focusin', event => {
+    const link = event.target.closest('a:not(.skip-link):not(.contact-button)');
+    if (link && link.matches(':focus-visible')) link.style.setProperty('--link-x', '50%');
+});
