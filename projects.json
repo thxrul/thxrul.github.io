@@ -6,7 +6,7 @@
     "symbol": "Go",
     "url": "https://github.com/thxrul/curler",
     "description": [
-      "Simple curl based downloader written using GO"
+      "Simple TUI downloader written in GO using cURL. Made for downloading files continuously even if it gets interrupted. Lightweight and easy to compile and configure."
     ]
   },
   {
@@ -17,7 +17,7 @@
     "status": "Work in progress",
     "url": "https://github.com/thxrul/OpenMyau-Plus",
     "description": [
-      "Experimental Minecraft Ghost Client (OpenMyau+ Fork using a lot of AI slop coding and a little bit of hand coding)"
+      "Experimental Minecraft Ghost Client forked from OpenMyau+. Tries to Implement Tenacity UI, remove obsolete modules and improve upon existing ones. Almost entirely coded using assistance of LLMs."
     ]
   },
   {
@@ -27,7 +27,7 @@
     "symbol": "Py",
     "url": "https://github.com/thxrul/pyDo",
     "description": [
-      "simple python to-do list app."
+      "Extremely simple python script which creates a file to store simple 'to do' esque actions.."
     ]
   },
   {
@@ -37,7 +37,7 @@
     "symbol": "JS",
     "url": "https://github.com/thxrul/thxrul.github.io",
     "description": [
-      "simple portfolio"
+      "This website! Almost entirely vibe coded using ChatGPT 6.1 Sol through OpenAI Codex."
     ]
   }
 ]
