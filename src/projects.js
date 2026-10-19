@@ -24,6 +24,17 @@ function validProjects(data) {
     ) && new Set(data.map(project => project.id)).size === data.length;
 }
 function metadata(project) { return project.language + (project.status ? ` · ${project.status}` : ''); }
+
+// Apple physics: rubber-banding resistance for edge overshoot
+function rubberband(overshoot, dimension = 500, constant = 0.55) {
+    return (overshoot * dimension * constant) / (dimension + constant * Math.abs(overshoot));
+}
+
+// Apple physics: exponential momentum projection (WWDC 2018)
+function projectMomentum(initialVelocity, decelerationRate = 0.998) {
+    return (initialVelocity / 1000) * decelerationRate / (1 - decelerationRate);
+}
+
 let currentDialog = null;
 function morphFrames(from, to, closing = false) {
     const dx = from.x + from.width / 2 - to.x - to.width / 2;
@@ -72,6 +83,7 @@ async function openProject(project, trigger) {
     if (currentDialog) return;
     const dialog = element('dialog', 'project-dialog-overlay project-native-dialog');
     const panel = element('div', 'project-dialog-panel');
+    const handle = element('div', 'project-dialog-handle'); handle.setAttribute('aria-hidden', 'true');
     const content = element('div', 'project-dialog-scroll');
     const titleId = `project-dialog-title-${project.id}`, descriptionId = `project-dialog-description-${project.id}`;
     dialog.setAttribute('aria-labelledby', titleId); dialog.setAttribute('aria-describedby', descriptionId);
@@ -87,7 +99,7 @@ async function openProject(project, trigger) {
     content.append(art, title, meta, description, repository);
     const close = element('button', 'project-dialog-close'); close.type = 'button'; close.autofocus = true; close.setAttribute('aria-label', 'Close project details');
     close.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M6 18 18 6"/></svg>';
-    panel.append(content, close); dialog.append(panel); document.body.append(dialog);
+    panel.append(handle, content, close); dialog.append(panel); document.body.append(dialog);
     const previousOverflow = document.body.style.overflow;
     const inertState = [...document.body.children].filter(node => node !== dialog).map(node => [node, node.inert]);
     currentDialog = dialog; trigger.setAttribute('aria-expanded', 'true');
@@ -117,6 +129,80 @@ async function openProject(project, trigger) {
         if (event.shiftKey && document.activeElement === repository) { event.preventDefault(); close.focus(); }
         else if (!event.shiftKey && document.activeElement === close) { event.preventDefault(); repository.focus(); }
     });
+
+    // 1:1 Gesture tracking, rubber-banding, momentum projection, and spring release handoff
+    let isDragging = false, startY = 0, initialY = 0, history = [], gestureAnim = null;
+    function getLiveY() {
+        const matrixStr = getComputedStyle(panel).transform;
+        if (!matrixStr || matrixStr === 'none') return 0;
+        try { return new DOMMatrix(matrixStr).m42; } catch { return 0; }
+    }
+
+    panel.addEventListener('pointerdown', e => {
+        if (reduced()) return;
+        if (e.target.closest('a, button:not(.project-dialog-handle)') && !e.target.closest('.project-dialog-art, .project-dialog-title, .project-dialog-handle')) return;
+        if (content.scrollTop > 0 && e.target.closest('.project-dialog-scroll') && !e.target.closest('.project-dialog-handle')) return;
+
+        isDragging = true;
+        try { panel.setPointerCapture(e.pointerId); } catch {}
+        startY = e.clientY;
+        initialY = getLiveY();
+        if (gestureAnim) { gestureAnim.cancel(); gestureAnim = null; }
+        history = [{ y: e.clientY, time: performance.now() }];
+        panel.style.willChange = 'transform';
+    });
+
+    panel.addEventListener('pointermove', e => {
+        if (!isDragging) return;
+        const now = performance.now();
+        const deltaY = e.clientY - startY;
+        let y = initialY + deltaY;
+        if (y < 0) y = rubberband(y);
+        panel.style.transform = `translate3d(0, ${y}px, 0)`;
+        history.push({ y: e.clientY, time: now });
+        if (history.length > 5) history.shift();
+    });
+
+    function handleRelease(e) {
+        if (!isDragging) return;
+        isDragging = false;
+        try { panel.releasePointerCapture(e.pointerId); } catch {}
+
+        const currentY = getLiveY();
+        let velocity = 0;
+        if (history.length > 1) {
+            const first = history[0], last = history[history.length - 1];
+            const dt = (last.time - first.time) / 1000;
+            if (dt > 0) velocity = (last.y - first.y) / dt;
+        }
+
+        const projectedY = currentY + projectMomentum(velocity);
+
+        if ((projectedY > 150 || velocity > 400 || currentY > 160) && velocity > -100) {
+            const targetY = window.innerHeight;
+            const distance = targetY - currentY;
+            const duration = Math.min(320, Math.max(160, distance / Math.max(Math.abs(velocity), 700) * 1000));
+            gestureAnim = panel.animate([
+                { transform: `translate3d(0, ${currentY}px, 0)` },
+                { transform: `translate3d(0, ${targetY}px, 0)` }
+            ], { duration, easing: 'cubic-bezier(0.32, 0.72, 0, 1)', fill: 'forwards' });
+            gestureAnim.finished.then(() => closeProject()).catch(() => {});
+        } else {
+            const duration = Math.min(380, Math.max(200, Math.abs(currentY) * 1.5));
+            gestureAnim = panel.animate([
+                { transform: `translate3d(0, ${currentY}px, 0)` },
+                { transform: 'translate3d(0, 0px, 0)' }
+            ], { duration, easing: 'cubic-bezier(0.175, 0.885, 0.32, 1.1)', fill: 'forwards' });
+            gestureAnim.finished.then(() => {
+                panel.style.transform = '';
+                panel.style.willChange = '';
+                gestureAnim = null;
+            }).catch(() => {});
+        }
+    }
+
+    panel.addEventListener('pointerup', handleRelease);
+    panel.addEventListener('pointercancel', handleRelease);
     trigger.style.opacity = '0';
     openingAnimation = animateMorph(trigger, panel, dialog, false);
     await openingAnimation;
