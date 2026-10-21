@@ -2,7 +2,7 @@
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
 html { scroll-behavior: smooth; scroll-padding-top: 24px; }
-body { margin: 0; background: var(--background); color: var(--text); font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", 'Courier New', Courier, monospace; font-optical-sizing: auto; line-height: 1.6; position: relative; isolation: isolate; }
+body { margin: 0; background: var(--background); color: var(--text); font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", 'Courier New', Courier, monospace; font-optical-sizing: auto; line-height: 1.6; position: relative; isolation: auto; }
 ::selection { background: var(--text); color: var(--background); }
 a { color: inherit; text-decoration: none; position: relative; isolation: isolate; }
 a:not(.skip-link):not(.contact-button)::before { content: ''; position: absolute; top: 0; bottom: 0; left: 0; width: 2px; z-index: 0; background: #fff; opacity: 0; transform: translate3d(var(--link-x, 0px), 0, 0) scaleY(0); transform-origin: bottom; transition: transform 180ms ease, opacity 180ms ease; pointer-events: none; }
@@ -17,8 +17,8 @@ a, button { -webkit-tap-highlight-color: #ffffff26; }
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 .skip-link { position: fixed; top: 12px; left: 16px; z-index: 20; padding: 12px 18px; background: var(--text); color: var(--background); transform: translateY(-180%); }
 .skip-link:focus { transform: none; }
-#dot-matrix { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: -1; opacity: .55; }
-#cursor { display: none; position: fixed; left: 0; top: 0; width: 36px; height: 36px; border: 1px solid #eeeeea55; border-radius: 50%; pointer-events: none; z-index: 10; opacity: 0; transition: opacity 200ms; }
+#dot-matrix { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; opacity: .55; }
+#cursor { display: none; position: fixed; left: 0; top: 0; width: 18px; height: 18px; border-radius: 50%; pointer-events: none; z-index: 45; opacity: 0; will-change: transform; transition: opacity 160ms; }
 .site-header { position: sticky; top: 0; z-index: 25; width: 100%; max-width: 100%; margin: 0 auto; padding: 16px max(32px, calc((100% - var(--page-width)) / 2)); display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px 32px; border-bottom: 1px solid rgba(255, 255, 255, 0.12); background: rgba(17, 17, 19, 0.72); -webkit-backdrop-filter: blur(20px) saturate(180%); backdrop-filter: blur(20px) saturate(180%); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 4px 20px rgba(0, 0, 0, 0.15); transition: background 200ms ease; }
 .wordmark { display: inline-flex; align-items: center; min-height: 44px; font-size: 22px; font-weight: bold; letter-spacing: -1px; }
 .wordmark .link-ink > span { color: var(--muted); }
@@ -109,7 +109,7 @@ footer a { display: inline-flex; align-items: center; min-height: 44px; }
 
 @keyframes blink { 50% { opacity: 0; } }
 @keyframes float { 50% { transform: translateY(6px); } }
-@keyframes type-line { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0); } }
+@keyframes type-line { from { clip-path: inset(-.4em 0); } to { clip-path: inset(-.4em 0); } }
 @keyframes portrait-enter { from { opacity: 0; transform: scale(.92) translateY(24px); } to { opacity: 1; transform: none; } }
 @keyframes morph-in { from { opacity: 0; transform: translate3d(-28px, 32px, 0) scale(.97); border-radius: 24px; } to { opacity: 1; transform: none; } }
 .motion-enabled .reveal-pending { opacity: 0; transform: translate3d(-28px, 32px, 0) scale(.97); }
@@ -283,11 +283,67 @@ footer { padding-bottom: calc(92px + env(safe-area-inset-bottom)); }
 @property --link-x { syntax: '<length-percentage>'; inherits: false; initial-value: 0px; }
 a::before { --link-x: inherit; }
 :is(.project-card, .roadmap-block, .project-warning, .avatar, #audio-toggle, #motion-toggle, #projects-layout-toggle, .contact-button, .project-dialog-panel)::after { --spot-x: inherit; --spot-y: inherit; }
-#cursor { will-change: transform; transition: transform 34ms linear, opacity 200ms; }
 
-#dot-interaction { position: fixed; left: 0; top: 0; z-index: -1; pointer-events: none; will-change: transform; }
+#dot-interaction { position: fixed; left: 0; top: 0; z-index: 0; pointer-events: none; will-change: transform; }
 
 .project-native-dialog { width: 100%; height: 100%; max-width: none; max-height: none; margin: 0; border: 0; color: var(--text); background: transparent; overflow: hidden; }
 .project-native-dialog:not([open]) { display: none; }
 .project-native-dialog::backdrop { background: #000000a3; }
 .project-morph-clone { pointer-events: none; z-index: 5; transform-origin: center; }
+
+/* Scroll-away navigation and small, always-reachable motion control. */
+.site-header { transition: transform 280ms cubic-bezier(.22,1,.36,1); }
+.site-header.header-hidden { transform: translate3d(0, -105%, 0); pointer-events: none; }
+
+#motion-toggle { position: fixed; left: max(12px, env(safe-area-inset-left)); bottom: max(12px, env(safe-area-inset-bottom)); z-index: 16; font-size: 11px; padding: 8px 10px; min-height: 44px; }
+/* A soft black point, a one-pixel white rim, and a springy click echo. */
+#cursor::after { content: ''; position: absolute; inset: -1px; border: 1px solid #ffffff99; border-radius: inherit; opacity: 0; }
+#cursor.cursor-click::after { animation: cursor-echo 480ms ease-out; }
+@keyframes cursor-echo { 0% { opacity: .75; transform: scale(.6); } 100% { opacity: 0; transform: scale(3); } }
+
+.type-letter { display: inline-block; white-space: pre; }
+.intro-animating .type-letter { animation: letter-spring 510ms both; animation-delay: calc(var(--type-delay) + var(--letter-delay)); }
+.type-heading.is-typing .type-letter { animation: letter-spring 510ms both; animation-delay: calc(300ms + var(--letter-delay)); }
+@keyframes letter-spring {
+    0% { opacity: 0; transform: translate3d(0,.22em,0) scale(.9); }
+    48% { opacity: 1; transform: translate3d(0,-.09em,0) scale(1.035); }
+    72% { transform: translate3d(0,.035em,0) scale(.99); }
+    100% { opacity: 1; transform: none; }
+}
+@keyframes portrait-enter { 0% { opacity: 0; transform: scale(.92) translateY(24px); } 64% { opacity: 1; transform: scale(1.025) translateY(-5px); } 82% { transform: scale(.993) translateY(2px); } 100% { opacity: 1; transform: none; } }
+@keyframes morph-in { 0% { opacity: 0; transform: translate3d(-28px,32px,0) scale(.97); } 65% { opacity: 1; transform: translate3d(3px,-4px,0) scale(1.007); } 82% { transform: translate3d(-1px,2px,0); } 100% { opacity: 1; transform: none; } }
+/* The alternate palette changes paint only; all dimensions remain identical. */
+:root.theme-tuffest { --background: #19171b; --surface: #29252d; --text: #f5b2cf; --muted: #c39dac; --line: #f5b2cf38; color-scheme: dark; }
+.theme-tuffest :is(.site-header, .project-card, .roadmap-block, #audio-toggle, #motion-toggle, #projects-layout-toggle, .contact-button, .project-dialog-panel, .project-dialog-close) { background: #29252d; -webkit-backdrop-filter: none; backdrop-filter: none; border-color: var(--line); box-shadow: inset 0 1px 0 #f5b2cf12, 0 12px 32px #00000030; }
+.theme-tuffest :is(.project-symbol, .project-symbol-large) { background: #332c35; border-color: var(--line); }
+.theme-tuffest :is(.project-card, #audio-toggle, #motion-toggle, #projects-layout-toggle, .contact-button, .project-dialog-close):hover { border-color: #f5b2cf88; }
+.theme-tuffest .project-dialog-description { color: #dbb7c7; }
+.theme-tuffest .project-dialog-handle { background: #f5b2cf66; }
+.theme-tuffest :is(.university, .social-link) { text-decoration-color: var(--muted); border-color: var(--line); }
+.theme-tuffest .scroll-progress-fill { background: linear-gradient(90deg, #6e4259, #d78aad 65%, #f5b2cf); }
+.theme-tuffest :is(.project-card, .roadmap-block, .project-warning, .avatar, #audio-toggle, #motion-toggle, #projects-layout-toggle, .contact-button, .project-dialog-panel)::after { background: radial-gradient(180px circle at var(--spot-x,50%) var(--spot-y,0%), #f5b2cfb0, transparent 70%); }
+.theme-tuffest a:not(.skip-link):not(.contact-button)::before { background: #f5b2cf; }
+@media (prefers-reduced-motion: reduce) { .type-letter { opacity: 1 !important; transform: none !important; } }
+/* Keep live dot interactions inexpensive underneath the translucent surfaces. */
+.site-header { background: #111113eb; -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px); }
+.project-card, .roadmap-block, #audio-toggle, #motion-toggle, #projects-layout-toggle, .contact-button { -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px); box-shadow: inset 0 1px 0 #ffffff0c, 0 8px 24px #00000020; }
+.theme-tuffest :is(.site-header, .project-card, .roadmap-block, #audio-toggle, #motion-toggle, #projects-layout-toggle, .contact-button) { background: #29252d; -webkit-backdrop-filter: none; backdrop-filter: none; }
+.theme-tuffest a:is(:hover, :focus-visible) .link-ink { color: #f5b2cf; }
+
+/* The browser composites the soft-dot cursor itself, independently of JS load. */
+@media (hover: hover) and (pointer: fine) {
+    html.custom-cursor-ready:not(.motion-reduced), html.custom-cursor-ready:not(.motion-reduced) :is(a, button, .project-dialog-handle) { cursor: url('assets/cursor.svg') 12 12, auto; }
+    body.project-dialog-open, body.project-dialog-open :is(a, button, .project-dialog-handle) { cursor: auto; }
+    body.project-dialog-open button { cursor: pointer; }
+}
+/* Measured overload lowers raster resolution, never dot density or hold physics. */
+.performance-lite :is(.site-header, .project-card, .roadmap-block, #audio-toggle, #motion-toggle, #projects-layout-toggle, .contact-button, .project-dialog-panel) { -webkit-backdrop-filter: none; backdrop-filter: none; box-shadow: none; }
+.performance-lite :is(.project-card, .roadmap-block, .project-warning, .avatar, #audio-toggle, #motion-toggle, #projects-layout-toggle, .contact-button, .project-dialog-panel)::after { display: none; }
+/* Separate the background compositor layers from the document's blend surfaces. */
+main, footer { position: relative; z-index: 1; }
+.performance-lite .type-letter, .performance-lite .scroll-hint .link-ink > span:last-child, .performance-lite .caret { animation: none !important; }
+
+#dot-field-gpu { position: fixed; left: 0; top: 0; z-index: 0; pointer-events: none; will-change: transform; }
+
+.intro-animating .caret { visibility: hidden; animation: caret-ready 1ms calc(var(--type-delay) + var(--type-duration)) forwards; }
+@keyframes caret-ready { to { visibility: visible; } }

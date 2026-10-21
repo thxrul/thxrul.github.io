@@ -28,12 +28,29 @@ const portrait = document.getElementById('pfp');
 portrait.addEventListener('error', () => { portrait.hidden = true; });
 if (portrait.complete && portrait.naturalWidth === 0) portrait.hidden = true;
 
-// One compositor reveal per line, rather than a filter/layer for every letter.
+// Character springs run only during typing: no blur or permanent character layers.
+function prepareBouncyText(root) {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+    const nodes = []; while (walker.nextNode()) nodes.push(walker.currentNode);
+    let index = 0;
+    nodes.forEach(node => {
+        const fragment = document.createDocumentFragment();
+        for (const character of node.textContent) {
+            const letter = document.createElement('span');
+            letter.className = 'type-letter'; letter.textContent = character;
+            letter.style.setProperty('--letter-delay', `${index++ * 115}ms`);
+            fragment.append(letter);
+        }
+        node.replaceWith(fragment);
+    });
+}
+// One clipping reveal per line, with short transform springs as each letter appears.
 const greeting = document.querySelector('.greeting');
 const greetingLines = [...greeting.querySelectorAll('.greeting-line')];
 let greetingDelay = 300;
 greetingLines.forEach(line => {
     const length = line.textContent.trim().length;
+    prepareBouncyText(line);
     line.style.setProperty('--type-duration', `${length * 115}ms`);
     line.style.setProperty('--type-steps', String(length));
     line.style.setProperty('--type-delay', `${greetingDelay}ms`);
@@ -42,7 +59,7 @@ greetingLines.forEach(line => {
 if (motionEnabled) document.body.classList.add('intro-animating');
 const finishIntro = () => document.body.classList.remove('intro-animating');
 greeting.addEventListener('animationend', event => {
-    if (event.target === greetingLines[greetingLines.length - 1]) finishIntro();
+    if (event.target === greetingLines[greetingLines.length - 1] && event.animationName === 'type-line') setTimeout(finishIntro, 420);
 });
 window.addEventListener('motionchange', () => { if (!motionEnabled) finishIntro(); });
 document.addEventListener('visibilitychange', () => { if (document.hidden) finishIntro(); });
@@ -89,13 +106,16 @@ if ('IntersectionObserver' in window) {
 const typedHeadings = [...document.querySelectorAll('h2')];
 typedHeadings.forEach(heading => {
     const length = heading.textContent.trim().length;
+    heading.setAttribute('aria-label', heading.textContent.trim());
+    heading.querySelectorAll('a').forEach(link => link.setAttribute('aria-label', link.textContent.trim()));
     heading.classList.add('type-heading');
     heading.style.setProperty('--type-duration', `${length * 115}ms`);
     heading.style.setProperty('--type-steps', String(length));
     const reveal = document.createElement('span'); reveal.className = 'heading-reveal';
     reveal.append(...heading.childNodes); heading.append(reveal);
+    prepareBouncyText(reveal);
     heading.addEventListener('animationend', event => {
-        if (event.target === reveal) heading.classList.remove('is-typing');
+        if (event.target === reveal && event.animationName === 'type-line') setTimeout(() => heading.classList.remove('is-typing'), 420);
     });
 });
 function completeHeading(heading) {
@@ -123,11 +143,23 @@ if ('IntersectionObserver' in window && motionEnabled) {
 // Read progress directly from scroll position, batching updates to one per frame.
 const progressTrack = document.getElementById('scroll-progress');
 let progressFrame = null;
+const siteHeader = document.querySelector('.site-header');
+let previousScrollY = window.scrollY, headerTravel = 0;
+let headerHeight = siteHeader.offsetHeight;
+if ('ResizeObserver' in window) new ResizeObserver(() => { headerHeight = siteHeader.offsetHeight; }).observe(siteHeader);
 function updateScrollProgress() {
     progressFrame = null;
     const range = document.documentElement.scrollHeight - document.documentElement.clientHeight;
     const progress = range > 0 ? Math.min(1, Math.max(0, window.scrollY / range)) : 0;
     progressTrack.style.setProperty('--scroll-progress', String(progress));
+    const headerWasHidden = siteHeader.classList.contains('header-hidden');
+    const delta = window.scrollY - previousScrollY;
+    if (delta && Math.sign(delta) !== Math.sign(headerTravel)) headerTravel = 0;
+    headerTravel += delta;
+    if (window.scrollY < 40 || headerTravel < -12) siteHeader.classList.remove('header-hidden');
+    else if (window.scrollY > headerHeight && headerTravel > 12 && !(siteHeader.contains(document.activeElement) && document.activeElement.matches(':focus-visible'))) siteHeader.classList.add('header-hidden');
+    previousScrollY = window.scrollY;
+    if (headerWasHidden !== siteHeader.classList.contains('header-hidden')) window.dispatchEvent(new Event('headerchange'));
 }
 function requestProgressUpdate() {
     if (progressFrame === null) progressFrame = requestAnimationFrame(updateScrollProgress);
@@ -138,6 +170,9 @@ window.addEventListener('resize', requestProgressUpdate, { passive: true });
 window.addEventListener('load', requestProgressUpdate);
 if ('ResizeObserver' in window) new ResizeObserver(requestProgressUpdate).observe(document.body);
 updateScrollProgress();
+siteHeader.addEventListener('focusin', () => {
+    if (siteHeader.classList.contains('header-hidden')) { siteHeader.classList.remove('header-hidden'); window.dispatchEvent(new Event('headerchange')); }
+});
 
 const projectsLayoutToggle = document.getElementById('projects-layout-toggle');
 const projectList = document.getElementById('project-list');
@@ -154,6 +189,8 @@ projectsLayoutToggle.addEventListener('click', () => setProjectLayout(!projectLi
 
 // The generated directory index supplies file tags, embedded artwork, and track order.
 const audio = document.getElementById('site-audio');
+audio.volume = 0.2;
+let alternateTheme = false;
 const audioToggle = document.getElementById('audio-toggle');
 const audioStatus = document.getElementById('audio-status');
 const audioArt = document.getElementById('audio-art');
@@ -217,7 +254,7 @@ audio.addEventListener('play', () => {
 audio.addEventListener('pause', syncAudioButton);
 audio.addEventListener('ended', () => {
     syncAudioButton();
-    if (audioTracks.length > 1) {
+    if (!alternateTheme && audioTracks.length > 1) {
         setTrack((trackIndex + 1) % audioTracks.length);
         void startPlayback();
     }
@@ -266,7 +303,7 @@ async function loadAudioLibrary() {
         const library = await response.json();
         audioTracks = Array.isArray(library.tracks) ? library.tracks.filter(track =>
             typeof track.src === 'string' && track.src.startsWith('audio/') && typeof track.title === 'string') : [];
-        if (audioTracks.length) setTrack(0);
+        if (audioTracks.length && !alternateTheme) setTrack(0);
     } catch (error) {
         // The current audio file remains usable if the index cannot be fetched.
     } finally {
@@ -285,6 +322,7 @@ function spring(dot, x, y, animate) {
 }
 const halo = document.getElementById('audio-halo');
 const haloContext = halo.getContext('2d');
+let haloWorker = null, workerHaloCanvas = null;
 const haloSensitivities = [0.45, 1.15, 0.7, 1.65, 0.9, 1.4, 0.55, 1.9];
 const haloDots = Array.from({ length: 32 }, (_, i) => ({
     cos: Math.cos(i * Math.PI * 2 / 32), sin: Math.sin(i * Math.PI * 2 / 32),
@@ -296,11 +334,15 @@ function readAudio() {
         analyser.getFloatTimeDomainData(waveformData);
         let sum = 0;
         for (let i = 0; i < waveformData.length; i++) sum += waveformData[i] * waveformData[i];
-        audioEnergy += (Math.sqrt(sum / waveformData.length) - audioEnergy) * 0.45;
+        audioEnergy += (Math.sqrt(sum / waveformData.length) / Math.max(0.01, audio.volume) - audioEnergy) * 0.45;
     } else audioEnergy *= 0.65;
 }
 const haloGroups = haloSensitivities.map(sensitivity => haloDots.filter(dot => dot.sensitivity === sensitivity));
 function drawHalo(animate = motionEnabled) {
+    if (haloWorker) {
+        haloWorker.postMessage({type:'halo',energy:audioEnergy,animate,alternate:alternateTheme,scale:Math.min(devicePixelRatio||1,1.5)});
+        return;
+    }
     if (!haloContext) return;
     haloContext.clearRect(0, 0, 96, 96);
     haloContext.lineWidth = 1.6; haloContext.lineCap = 'round';
@@ -309,7 +351,7 @@ function drawHalo(animate = motionEnabled) {
         const energy = animate ? 1 - Math.exp(-audioEnergy * first.sensitivity * 4) : 0;
         spring(first, energy * 10, 0, animate);
         if (animate) spring(first, energy * 10, 0, true);
-        haloContext.strokeStyle = `rgba(235, 235, 230, ${0.45 + energy * 0.5})`;
+        haloContext.strokeStyle = `rgba(${alternateTheme ? '245,178,207' : '235,235,230'}, ${0.45 + energy * 0.5})`;
         haloContext.beginPath();
         group.forEach(dot => {
             dot.dx = first.dx;
@@ -329,7 +371,7 @@ function stopHalo() {
     haloFrame = null;
 }
 function haloAllowed() {
-    return haloVisible && !document.hidden && motionEnabled && !document.body.classList.contains('project-dialog-open');
+    return haloVisible && !siteHeader.classList.contains('header-hidden') && !document.hidden && motionEnabled && !document.body.classList.contains('project-dialog-open');
 }
 function animateHalo(time) {
     haloFrame = null;
@@ -368,17 +410,38 @@ if ('IntersectionObserver' in window) {
     }).observe(halo.parentElement);
 } else haloVisible = true;
 window.addEventListener('matrixchange', updateHalo);
+window.addEventListener('headerchange', updateHalo);
+window.addEventListener('themechange', updateHalo);
 window.addEventListener('motionchange', updateHalo);
 window.addEventListener('dialogchange', updateHalo);
 document.addEventListener('visibilitychange', updateHalo);
 window.addEventListener('resize', resizeHalo, { passive: true });
 resizeHalo();
 
+function moveHaloToWorker(worker) {
+    if (haloWorker === worker) return;
+    stopHalo();
+    const replacement = document.createElement('canvas');
+    replacement.id = 'audio-halo'; replacement.setAttribute('aria-hidden','true');
+    try {
+        const offscreen = replacement.transferControlToOffscreen();
+        halo.replaceWith(replacement); workerHaloCanvas = replacement; haloWorker = worker;
+        worker.postMessage({type:'halo-init',canvas:offscreen},[offscreen]);
+    } catch { replacement.replaceWith(halo); haloWorker = null; workerHaloCanvas = null; }
+    updateHalo();
+}
+function restoreMainThreadHalo() {
+    if (!haloWorker) return;
+    haloWorker = null; workerHaloCanvas?.replaceWith(halo); workerHaloCanvas = null;
+    resizeHalo();
+}
+
 const canvas = document.getElementById('dot-matrix');
 const context = canvas.getContext('2d');
 const cursor = document.getElementById('cursor');
-if (context) {
-    const spacing = 24, pointerRadius = 190;
+function startCanvasDotField() {
+    if (!context) return;
+    const spacing = 24 / Math.sqrt(5), pointerRadius = 190;
     const pointer = { x: 0, y: 0, active: false, pressed: false, pressedAt: 0, touch: false };
     const position = { x: 0, y: 0 };
     // Only this small opaque patch changes; the full-screen dot field is cached.
@@ -386,17 +449,20 @@ if (context) {
     patch.id = 'dot-interaction'; patch.setAttribute('aria-hidden', 'true');
     canvas.after(patch);
     const patchContext = patch.getContext('2d', { alpha: false });
+    document.documentElement.classList.add('custom-cursor-ready');
     const activeDots = new Map();
     const buckets = Array.from({ length: 8 }, () => []);
     let width = 0, height = 0, columns = 0, rows = 0;
-    let frame = null, matrixTimer = null, resizeFrame = null, lastScroll = -Infinity, lastDraw = 0;
+    let frame = null, resizeFrame = null, lastScroll = -Infinity, lastDraw = 0;
+    let ripple = null, clickTimer;
+    let ink = '235,235,230';
     let patchWidth = 0, patchHeight = 0, pixelScale = 1, background = '#111113';
     function addCircle(ctx, x, y, radius) {
         ctx.moveTo(x + radius, y); ctx.arc(x, y, radius, 0, Math.PI * 2);
     }
     function paintStatic() {
         context.clearRect(0, 0, width, height);
-        context.fillStyle = 'rgba(235,235,230,.48)'; context.beginPath();
+        context.fillStyle = `rgba(${ink},.48)`; context.beginPath();
         for (let row = 0; row < rows; row++) {
             for (let col = 0; col < columns; col++) addCircle(context, 12 + col * spacing, 12 + row * spacing, 0.85);
         }
@@ -411,7 +477,7 @@ if (context) {
         activeDots.forEach((dot, key) => {
             if (dot.x < left + 2 || dot.x > left + patchWidth - 2 || dot.y < top + 2 || dot.y > top + patchHeight - 2) activeDots.delete(key);
         });
-        patchContext.fillStyle = 'rgba(235,235,230,.264)'; patchContext.beginPath();
+        patchContext.fillStyle = `rgba(${ink},.264)`; patchContext.beginPath();
         const minCol = Math.max(0, Math.floor((left - 12) / spacing));
         const maxCol = Math.min(columns - 1, Math.ceil((left + patchWidth - 12) / spacing));
         const minRow = Math.max(0, Math.floor((top - 12) / spacing));
@@ -425,7 +491,7 @@ if (context) {
         buckets.forEach((bucket, level) => {
             if (!bucket.length) return;
             const influence = level / 7;
-            patchContext.fillStyle = `rgba(235,235,230,${(0.48 + influence * 0.38) * 0.55})`;
+            patchContext.fillStyle = `rgba(${ink},${(0.48 + influence * 0.38) * 0.55})`;
             patchContext.beginPath();
             bucket.forEach(dot => { if (activeDots.has(dot.key)) addCircle(patchContext, dot.x + dot.dx, dot.y + dot.dy, 0.85 + influence * 0.7); });
             patchContext.fill();
@@ -433,11 +499,10 @@ if (context) {
         patch.style.transform = `translate3d(${left}px, ${top}px, 0)`; patch.hidden = false;
     }
     function reset() {
-        if (matrixTimer !== null) clearTimeout(matrixTimer);
-        matrixTimer = null;
         if (frame !== null) cancelAnimationFrame(frame);
         frame = null;
         pointer.active = pointer.pressed = false; pointer.pressedAt = 0;
+        ripple = null; lastDraw = 0;
         document.body.classList.remove('matrix-holding');
         cursor.style.opacity = '0';
         activeDots.clear();
@@ -460,15 +525,25 @@ if (context) {
         paintStatic();
     }
     function requestDraw() {
-        if (frame === null && matrixTimer === null && motionEnabled && !document.hidden && !document.body.classList.contains('project-dialog-open')) frame = requestAnimationFrame(draw);
+        if (frame === null && motionEnabled && !document.hidden && !document.body.classList.contains('project-dialog-open')) frame = requestAnimationFrame(draw);
     }
     function draw(time) {
-        frame = null; lastDraw = time;
+        frame = null;
+        // Fixed 60 Hz spring integration with interpolation keeps the original hold
+        // response consistent on 60/120 Hz displays and after an occasional slow frame.
+        const elapsed = lastDraw ? Math.min(50, time - lastDraw) : 1000 / 60;
+        const steps = elapsed / (1000 / 60);
+        lastDraw = time;
+        const simulationSteps = [];
+        for (let remaining = steps; remaining > 0; remaining -= 1) {
+            const step = Math.min(1, remaining);
+            simulationSteps.push({ step, spring: 0.075 * step, damping: Math.pow(0.76, step) });
+        }
         const active = motionEnabled && pointer.active;
-        position.x += (pointer.x - position.x) * 0.3276;
-        position.y += (pointer.y - position.y) * 0.3276;
-        cursor.style.transform = `translate3d(${position.x - 18}px, ${position.y - 18}px, 0)`;
-        cursor.style.opacity = active && !pointer.touch ? '1' : '0';
+        const follow = 1 - Math.pow(0.82, steps);
+        position.x += (pointer.x - position.x) * follow;
+        position.y += (pointer.y - position.y) * follow;
+
         if (active) {
             const minCol = Math.max(0, Math.floor((position.x - pointerRadius - 12) / spacing));
             const maxCol = Math.min(columns - 1, Math.ceil((position.x + pointerRadius - 12) / spacing));
@@ -477,7 +552,9 @@ if (context) {
             for (let row = minRow; row <= maxRow; row++) {
                 for (let col = minCol; col <= maxCol; col++) {
                     const key = row * columns + col;
-                    if (!activeDots.has(key)) activeDots.set(key, { key, x: 12 + col * spacing, y: 12 + row * spacing, dx: 0, dy: 0, vx: 0, vy: 0 });
+                    const x = 12 + col * spacing, y = 12 + row * spacing;
+                    if ((x - position.x) ** 2 + (y - position.y) ** 2 > pointerRadius ** 2) continue;
+                    if (!activeDots.has(key)) activeDots.set(key, { key, x, y, dx: 0, dy: 0, vx: 0, vy: 0 });
                 }
             }
         }
@@ -489,10 +566,24 @@ if (context) {
             const px = position.x - dot.x, py = position.y - dot.y;
             const distance = Math.sqrt(px * px + py * py);
             const influence = active ? Math.max(0, 1 - distance / pointerRadius) : 0;
-            const gentle = influence * influence * (pointer.pressed ? 0.55 : 0.3);
-            const pull = gentle + ((1 - Math.exp(-influence * 3)) * 0.88 - gentle) * concentration;
-            const tx = px * pull, ty = py * pull;
-            spring(dot, tx, ty, true); spring(dot, tx, ty, true);
+            const gentle = influence * influence * (pointer.pressed ? 0.55 : -0.3);
+            const pull = concentration ? gentle + ((1 - Math.exp(-influence * 3)) * 0.88 - gentle) * concentration : gentle;
+            let tx = px * pull, ty = py * pull;
+            // A short click launches a bounded outward wave; holding never changes.
+            if (ripple) {
+                const rx = dot.x - ripple.x, ry = dot.y - ripple.y;
+                const rd = Math.hypot(rx, ry) || 1;
+                const age = (time - ripple.at) / 1000;
+                const wave = Math.exp(-Math.pow((rd - age * 620) / 28, 2)) * 24 * Math.max(0, 1 - age / 0.45);
+                tx += rx / rd * wave; ty += ry / rd * wave;
+            }
+            // Fractional steps interpolate the same damped spring, rather than
+            // speeding it up on high-refresh screens or drawing on a 30 Hz timer.
+            for (const { step, spring: stiffness, damping } of simulationSteps) {
+                dot.vx = (dot.vx + (tx - dot.dx) * stiffness) * damping;
+                dot.vy = (dot.vy + (ty - dot.dy) * stiffness) * damping;
+                dot.dx += dot.vx * step; dot.dy += dot.vy * step;
+            }
             const moving = Math.abs(dot.dx - tx) + Math.abs(dot.dy - ty) + Math.abs(dot.vx) + Math.abs(dot.vy) > 0.025;
             if (!moving) { dot.dx = tx; dot.dy = ty; dot.vx = dot.vy = 0; }
             unsettled ||= moving;
@@ -502,9 +593,9 @@ if (context) {
         });
         if (activeDots.size) paintPatch();
         else patch.hidden = true;
-        if (unsettled || pointer.pressed && concentration < 0.995) {
-            matrixTimer = setTimeout(() => { matrixTimer = null; requestDraw(); }, Math.max(0, lastDraw + 1000 / 30 - performance.now() - 5));
-        }
+        if (ripple && time - ripple.at > 450) ripple = null;
+        if (unsettled || ripple || pointer.pressed && concentration < 0.995) requestDraw();
+        else lastDraw = 0;
     }
     window.addEventListener('pointermove', event => {
         if (!motionEnabled || performance.now() - lastScroll < 100 || document.body.classList.contains('project-dialog-open')) return;
@@ -526,6 +617,14 @@ if (context) {
         requestDraw();
     }, { passive: true });
     function release() {
+        if (pointer.pressed && performance.now() - pointer.pressedAt < 250) {
+            ripple = { x: pointer.x, y: pointer.y, at: performance.now() };
+            cursor.style.transform = `translate3d(${pointer.x-9}px,${pointer.y-9}px,0)`;
+            cursor.style.opacity = pointer.touch ? '0' : '1'; clearTimeout(clickTimer);
+            clickTimer = setTimeout(() => { cursor.style.opacity = '0'; }, 480);
+            cursor.classList.remove('cursor-click'); void cursor.offsetWidth;
+            cursor.classList.add('cursor-click');
+        }
         pointer.pressed = false; pointer.pressedAt = 0;
         document.body.classList.remove('matrix-holding');
         if (pointer.touch) pointer.active = false;
@@ -541,8 +640,41 @@ if (context) {
     document.addEventListener('visibilitychange', () => { if (document.hidden) reset(); });
     window.addEventListener('motionchange', () => { if (!motionEnabled) reset(); });
     window.addEventListener('dialogchange', () => { if (document.body.classList.contains('project-dialog-open')) reset(); });
+    window.addEventListener('themechange', () => {
+        reset(); ink = alternateTheme ? '245,178,207' : '235,235,230';
+        background = getComputedStyle(document.documentElement).getPropertyValue('--background').trim();
+        paintStatic();
+    });
     resize();
 }
+
+if (!window.startAcceleratedDotField?.(canvas, { motion: () => motionEnabled, alternate: () => alternateTheme, cursor, onReady: moveHaloToWorker, fallback: () => { restoreMainThreadHalo(); startCanvasDotField(); } })) startCanvasDotField();
+
+// Match the secret locally; never persist or transmit the typed characters.
+let secretKeys = '', lastSecretKey = 0;
+const themeStatus = document.getElementById('theme-status');
+window.addEventListener('keydown', event => {
+    if (event.ctrlKey || event.metaKey || event.altKey || event.isComposing || event.repeat || event.key.length !== 1 || event.target.closest('input, textarea, select, [contenteditable], dialog')) return;
+    if (performance.now() - lastSecretKey > 4000) secretKeys = '';
+    lastSecretKey = performance.now();
+    secretKeys = (secretKeys + event.key.toLowerCase()).slice(-12);
+    if (secretKeys !== 'tuffestcolor') return;
+    secretKeys = ''; alternateTheme = !alternateTheme;
+    document.documentElement.classList.toggle('theme-tuffest', alternateTheme);
+    document.querySelector('meta[name="theme-color"]').content = alternateTheme ? '#19171b' : '#111113';
+    if (alternateTheme) {
+        audioTitle.textContent = 'Feeling yummy x righteously — Ayesha';
+        audioTitle.title = audioTitle.textContent; audioArt.src = 'audio/default-cover.svg';
+        audio.src = 'media/tuffestcolor.mp3'; audio.loop = true; audio.load();
+    } else {
+        audio.loop = false;
+        if (audioTracks.length) setTrack(trackIndex);
+        else { audioTitle.textContent = 'ice — ZERTAL'; audioTitle.title = audioTitle.textContent; audio.src = 'audio/ice-zertal.mp3?v=21f203323fe30c95'; audio.load(); }
+    }
+    audioEnergy = 0; themeStatus.textContent = alternateTheme ? 'Pink theme activated.' : 'Original theme restored.';
+    window.dispatchEvent(new Event('themechange'));
+    userPaused = false; audioBusy = false; void startPlayback(true);
+});
 
 loadAudioLibrary();
 void startPlayback();
@@ -578,7 +710,7 @@ function paintPointerEffects() {
 }
 function queuePointerEffects(event) {
     if (event.pointerType === 'touch') return;
-    const spot = motionEnabled ? event.target.closest(spotlightSelector) : null;
+    const spot = motionEnabled && !document.documentElement.classList.contains('performance-lite') ? event.target.closest(spotlightSelector) : null;
     const link = event.target.closest('a:not(.skip-link):not(.contact-button)');
     if (!spot && !link && !previousSpot) return;
     pointerEffectEvent = { spot, link, clientX: event.clientX, clientY: event.clientY };
@@ -603,7 +735,7 @@ document.addEventListener('focusin', event => {
 // Fetch and parse the dialog library only as the project section approaches.
 let projectModulePromise;
 function loadProjectDialogs() {
-    if (!projectModulePromise) projectModulePromise = import('./assets/projects.js?v=20261015-3').then(module => module.projectsReady).catch(error => {
+    if (!projectModulePromise) projectModulePromise = import('./assets/projects.js?v=20261022-1').then(module => module.projectsReady).catch(error => {
         projectModulePromise = null;
         throw error;
     });
