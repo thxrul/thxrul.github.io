@@ -6,9 +6,9 @@
     <meta name="description" content="Tharul — studying at Coventry University. A small corner of the internet.">
     <meta name="theme-color" content="#111113">
     <title>thxrul</title>
-    <link rel="stylesheet" href="style.css?v=20261022-1">
-    <script src="dot-field.js?v=20261022-1" defer></script>
-    <script src="script.js?v=20261022-1" defer></script>
+    <link rel="stylesheet" href="style.css?v=20261022-2">
+    <script src="dot-field.js?v=20261022-2" defer></script>
+    <script src="script.js?v=20261022-2" defer></script>
     <link rel="icon" type="image/jpeg" href="favicon.jpeg">
 </head>
 <body>
@@ -17,28 +17,30 @@
     <canvas id="dot-matrix" aria-hidden="true"></canvas>
     <div id="cursor" aria-hidden="true"></div>
     <header class="site-header">
-        <a class="wordmark" href="#home" aria-label="Back to the top"><span class="link-ink">thxrul<span>_</span></span></a>
-        <nav aria-label="Main navigation">
-            <a href="#qualifications" aria-label="Go to qualifications section"><span class="link-ink">00 <span>Qualifications</span></span></a>
-            <a href="#github" aria-label="Go to GitHub section"><span class="link-ink">01 <span>GitHub</span></span></a>
-            <a href="#twitter" aria-label="Go to Twitter section"><span class="link-ink">02 <span>Twitter</span></span></a>
-            <a href="#youtube" aria-label="Go to YouTube section"><span class="link-ink">03 <span>YouTube</span></span></a>
-        </nav>
-        <div class="site-controls">
-            <div class="audio-player">
-                <div class="audio-button-wrap">
-                <canvas id="audio-halo" width="96" height="96" aria-hidden="true"></canvas>
-                <button id="audio-toggle" type="button" aria-label="Play audio" aria-pressed="false" title="Play audio">
-                    <svg class="play-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 11 7-11 7Z"/></svg>
-                    <svg class="pause-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5h3v14H7zm7 0h3v14h-3z"/></svg>
-                </button>
+        <div class="header-content">
+            <a class="wordmark" href="#home" aria-label="Back to the top"><span class="link-ink">thxrul<span>_</span></span></a>
+            <nav aria-label="Main navigation">
+                <a href="#qualifications" aria-label="Go to qualifications section"><span class="link-ink">00 <span>Qualifications</span></span></a>
+                <a href="#github" aria-label="Go to GitHub section"><span class="link-ink">01 <span>GitHub</span></span></a>
+                <a href="#twitter" aria-label="Go to Twitter section"><span class="link-ink">02 <span>Twitter</span></span></a>
+                <a href="#youtube" aria-label="Go to YouTube section"><span class="link-ink">03 <span>YouTube</span></span></a>
+            </nav>
+            <div class="site-controls">
+                <div class="audio-player">
+                    <div class="audio-button-wrap">
+                    <canvas id="audio-halo" width="96" height="96" aria-hidden="true"></canvas>
+                    <button id="audio-toggle" type="button" aria-label="Play audio" aria-pressed="false" title="Play audio">
+                        <svg class="play-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 11 7-11 7Z"/></svg>
+                        <svg class="pause-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5h3v14H7zm7 0h3v14h-3z"/></svg>
+                    </button>
+                    </div>
+                    <div class="audio-info">
+                        <img id="audio-art" src="audio/default-cover.svg" width="24" height="24" alt="">
+                        <span id="audio-title">ice — ZERTAL</span>
+                    </div>
+                    <audio id="site-audio" src="audio/ice-zertal.mp3?v=21f203323fe30c95" preload="metadata"></audio>
+                    <span id="audio-status" class="sr-only" role="status"></span>
                 </div>
-                <div class="audio-info">
-                    <img id="audio-art" src="audio/default-cover.svg" width="24" height="24" alt="">
-                    <span id="audio-title">ice — ZERTAL</span>
-                </div>
-                <audio id="site-audio" src="audio/ice-zertal.mp3?v=21f203323fe30c95" preload="metadata"></audio>
-                <span id="audio-status" class="sr-only" role="status"></span>
             </div>
         </div>
     </header>

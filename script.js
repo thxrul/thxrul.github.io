@@ -145,21 +145,23 @@ const progressTrack = document.getElementById('scroll-progress');
 let progressFrame = null;
 const siteHeader = document.querySelector('.site-header');
 let previousScrollY = window.scrollY, headerTravel = 0;
-let headerHeight = siteHeader.offsetHeight;
-if ('ResizeObserver' in window) new ResizeObserver(() => { headerHeight = siteHeader.offsetHeight; }).observe(siteHeader);
+function setHeaderCollapsed(collapsed) {
+    if (siteHeader.classList.contains('header-hidden') === collapsed) return;
+    siteHeader.classList.toggle('header-hidden', collapsed);
+    window.dispatchEvent(new Event('headerchange'));
+}
 function updateScrollProgress() {
     progressFrame = null;
     const range = document.documentElement.scrollHeight - document.documentElement.clientHeight;
     const progress = range > 0 ? Math.min(1, Math.max(0, window.scrollY / range)) : 0;
     progressTrack.style.setProperty('--scroll-progress', String(progress));
-    const headerWasHidden = siteHeader.classList.contains('header-hidden');
     const delta = window.scrollY - previousScrollY;
     if (delta && Math.sign(delta) !== Math.sign(headerTravel)) headerTravel = 0;
     headerTravel += delta;
-    if (window.scrollY < 40 || headerTravel < -12) siteHeader.classList.remove('header-hidden');
-    else if (window.scrollY > headerHeight && headerTravel > 12 && !(siteHeader.contains(document.activeElement) && document.activeElement.matches(':focus-visible'))) siteHeader.classList.add('header-hidden');
+    const keyboardFocus = siteHeader.contains(document.activeElement) && document.activeElement.matches(':focus-visible');
+    if (window.scrollY < 24 || headerTravel < -32 || keyboardFocus) setHeaderCollapsed(false);
+    else if (window.scrollY > 100 && headerTravel > 24) setHeaderCollapsed(true);
     previousScrollY = window.scrollY;
-    if (headerWasHidden !== siteHeader.classList.contains('header-hidden')) window.dispatchEvent(new Event('headerchange'));
 }
 function requestProgressUpdate() {
     if (progressFrame === null) progressFrame = requestAnimationFrame(updateScrollProgress);
@@ -171,7 +173,7 @@ window.addEventListener('load', requestProgressUpdate);
 if ('ResizeObserver' in window) new ResizeObserver(requestProgressUpdate).observe(document.body);
 updateScrollProgress();
 siteHeader.addEventListener('focusin', () => {
-    if (siteHeader.classList.contains('header-hidden')) { siteHeader.classList.remove('header-hidden'); window.dispatchEvent(new Event('headerchange')); }
+    if (document.activeElement.matches(':focus-visible')) setHeaderCollapsed(false);
 });
 
 const projectsLayoutToggle = document.getElementById('projects-layout-toggle');
@@ -650,6 +652,35 @@ function startCanvasDotField() {
 
 if (!window.startAcceleratedDotField?.(canvas, { motion: () => motionEnabled, alternate: () => alternateTheme, cursor, onReady: moveHaloToWorker, fallback: () => { restoreMainThreadHalo(); startCanvasDotField(); } })) startCanvasDotField();
 
+// The browser reveals the new palette from the native pointer, without a JS frame loop.
+let themePointer = null, themeTransition = null;
+function rememberThemePointer(event) { themePointer = { x: event.clientX, y: event.clientY }; }
+window.addEventListener('pointermove', rememberThemePointer, { passive: true });
+window.addEventListener('pointerdown', rememberThemePointer, { passive: true });
+function revealTheme() {
+    themeTransition?.skipTransition();
+    const applyTheme = () => {
+        document.documentElement.classList.toggle('theme-tuffest', alternateTheme);
+        document.querySelector('meta[name="theme-color"]').content = alternateTheme ? '#19171b' : '#111113';
+        themeStatus.textContent = alternateTheme ? 'Pink theme activated.' : 'Original theme restored.';
+        window.dispatchEvent(new Event('themechange'));
+    };
+    if (!motionEnabled || document.hidden || !document.startViewTransition) { applyTheme(); return; }
+    const x = Math.max(0, Math.min(innerWidth, themePointer?.x ?? innerWidth / 2));
+    const y = Math.max(0, Math.min(innerHeight, themePointer?.y ?? innerHeight / 2));
+    const radius = Math.ceil(Math.hypot(Math.max(x, innerWidth - x), Math.max(y, innerHeight - y)));
+    const transition = document.startViewTransition(applyTheme);
+    themeTransition = transition;
+    transition.ready.then(() => {
+        if (!motionEnabled) { transition.skipTransition(); return; }
+        document.documentElement.animate({ clipPath: [`circle(0px at ${x}px ${y}px)`, `circle(${radius}px at ${x}px ${y}px)`] }, {
+            duration: 720, easing: 'cubic-bezier(.2,.7,.2,1)', pseudoElement: '::view-transition-new(root)'
+        });
+    }).catch(() => {});
+    transition.finished.finally(() => { if (themeTransition === transition) themeTransition = null; }).catch(() => {});
+}
+window.addEventListener('motionchange', () => { if (!motionEnabled) themeTransition?.skipTransition(); });
+
 // Match the secret locally; never persist or transmit the typed characters.
 let secretKeys = '', lastSecretKey = 0;
 const themeStatus = document.getElementById('theme-status');
@@ -660,8 +691,7 @@ window.addEventListener('keydown', event => {
     secretKeys = (secretKeys + event.key.toLowerCase()).slice(-12);
     if (secretKeys !== 'tuffestcolor') return;
     secretKeys = ''; alternateTheme = !alternateTheme;
-    document.documentElement.classList.toggle('theme-tuffest', alternateTheme);
-    document.querySelector('meta[name="theme-color"]').content = alternateTheme ? '#19171b' : '#111113';
+    revealTheme();
     if (alternateTheme) {
         audioTitle.textContent = 'Feeling yummy x righteously — Ayesha';
         audioTitle.title = audioTitle.textContent; audioArt.src = 'audio/default-cover.svg';
@@ -671,8 +701,7 @@ window.addEventListener('keydown', event => {
         if (audioTracks.length) setTrack(trackIndex);
         else { audioTitle.textContent = 'ice — ZERTAL'; audioTitle.title = audioTitle.textContent; audio.src = 'audio/ice-zertal.mp3?v=21f203323fe30c95'; audio.load(); }
     }
-    audioEnergy = 0; themeStatus.textContent = alternateTheme ? 'Pink theme activated.' : 'Original theme restored.';
-    window.dispatchEvent(new Event('themechange'));
+    audioEnergy = 0;
     userPaused = false; audioBusy = false; void startPlayback(true);
 });
 
@@ -727,6 +756,7 @@ window.addEventListener('dialogchange', () => {
     pointerEffectFrame = null; previousSpot = null;
 });
 document.addEventListener('animationend', () => { geometryVersion++; });
+siteHeader.addEventListener('transitionend', () => { geometryVersion++; });
 document.addEventListener('focusin', event => {
     const link = event.target.closest('a:not(.skip-link):not(.contact-button)');
     if (link?.matches(':focus-visible')) link.style.setProperty('--link-x', `${cachedRect(link).width / 2}px`);
@@ -735,7 +765,7 @@ document.addEventListener('focusin', event => {
 // Fetch and parse the dialog library only as the project section approaches.
 let projectModulePromise;
 function loadProjectDialogs() {
-    if (!projectModulePromise) projectModulePromise = import('./assets/projects.js?v=20261022-1').then(module => module.projectsReady).catch(error => {
+    if (!projectModulePromise) projectModulePromise = import('./assets/projects.js?v=20261022-2').then(module => module.projectsReady).catch(error => {
         projectModulePromise = null;
         throw error;
     });

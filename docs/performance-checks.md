@@ -8,14 +8,14 @@ Chromium 151.0.7922.173, Playwright 1.62.1, Linux headless browser, 1366 × 768 
 
 | Main-thread CPU slowdown | Field updates/sec | Main-page updates/sec | Field frame-gap p95 | Main long tasks (>50 ms) | Linear raster scale |
 |---|---:|---:|---:|---:|---:|
-| 1× | 59.6 | 60.2 | 16.7 ms | 0 | 70% |
-| 6× | 58.3 | 60.0 | 16.8 ms | 0 | 70% |
-| 20× | 60.0 | 59.2 | 16.7 ms | 0 | 34% |
-| 40× | 59.3 | 32.8 | 16.7 ms | 6 | 25% |
+| 1× | 58.8 | 60.0 | 16.8 ms | 0 | 70% |
+| 6× | 56.5 | 59.4 | 33.2 ms | 0 | 25% |
+| 20× | 55.3 | 52.5 | 16.8 ms | 2 | 25% |
+| 40× | 59.5 | 33.7 | 16.8 ms | 8 | 25% |
 
-Normal and 6× page updates stayed around 60/sec. The extreme 40× case recorded 59.3 field updates/sec and 32.8 page updates/sec. These results do not guarantee 60 fps for the whole website on every laptop and are not a physical test on the user's Windows/Ryzen system.
+These measurements were repeated after adding the compact morphing header and cursor-origin theme ripple. Normal and 6× page updates stayed around 60/sec. The extreme 40× case recorded 59.5 field updates/sec and 33.7 page updates/sec. These results do not guarantee 60 fps for the whole website on every laptop and are not a physical test on the user's Windows/Ryzen system.
 
-Chromium's page CPU throttle does not throttle dedicated workers. An additional stress case therefore multiplied the measured execution time of **both worker animation and message callbacks by 40**, while also applying 40× page throttling and playing music. It recorded **54.4 field updates/sec** with **33.3 ms p95 frame gaps**; the main page recorded 35.3 updates/sec. This busy-wait workload is a conservative synthetic stress test, not a CPU-frequency or GPU-performance emulator.
+Chromium's page CPU throttle does not throttle dedicated workers. An additional stress case therefore multiplied the measured execution time of **both worker animation and message callbacks by 40**, while also applying 40× page throttling and playing music. It recorded **52.4 field updates/sec** with **33.3 ms p95 frame gaps**; the main page recorded 27.5 updates/sec. This busy-wait workload is a conservative synthetic stress test, not a CPU-frequency or GPU-performance emulator.
 
 ## Adaptation and limits
 
@@ -30,7 +30,9 @@ WebGL2 or worker failures restore the compatible Canvas2D renderer. That fallbac
 - Both GPU and main-page animation loops checked for idle sleep after clicks and released holds.
 - GPU context loss checked for recovery without interrupting music.
 - Equalizer sensitivity groups checked for differing audio-driven levels; both audio modes start at 20% volume.
-- Hidden theme checked for the uploaded audio, opaque pastel-black surfaces, pink accents, and unchanged layout geometry. Repeating the phrase restores the original mode.
+- Hidden theme checked for the uploaded audio, opaque pastel-black surfaces, pink cursor/qualification accents, and unchanged layout geometry. Repeating the phrase restores the original mode.
+- Cursor-origin circular theme reveals checked at 320, 390, 768 and 1366 px, including reduced motion.
+- Half-height header (94 px desktop, 140 px mobile), smooth 5 px collapse, navigation scaling/fading, fixed page layout and keyboard restoration checked at those widths.
 - Normal and alternate themes audited at 320, 390, 768 and 1440 px, with no detected WCAG A/AA axe violations or horizontal page overflow in those checks.
 - All project dialogs checked for editable JSON descriptions, long content, keyboard focus, Escape, outside click, reduced motion, and static links without JavaScript.
 
