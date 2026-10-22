@@ -94,7 +94,7 @@ Preserve the progressive hold formula: after 250 ms, concentration = 1 - exp(-he
 
 Use the same spring feel as before: at 60 Hz, velocity = (velocity + (target - displacement) × 0.075) × 0.76, then advance displacement. Advance using elapsed time so 60 Hz and high-refresh screens retain the same physical response. Use requestAnimationFrame during active motion, with no 30 fps timer that causes hover skipping. Smooth the pointer at the original equivalent rate (0.18 per 60 Hz frame).
 
-Use a native browser SVG cursor on fine mouse pointers so its movement stays independent of JavaScript load. Show a small black dot cursor, approximately 12 px across in a 20 px SVG canvas, with a soft blurred middle, a softly blurred 1 px outline, white normally and pastel pink in the alternate theme and a brief expanding click echo. Do not intercept pointer events. Keep native cursor behavior in modal dialogs and when animations are disabled. Touch users should not see a fake mouse cursor.
+Use a native browser SVG cursor on fine mouse pointers so its movement stays independent of JavaScript load. Show a small black dot cursor, approximately 12 px across in a 20 px SVG canvas, with a soft middle and approximately 1 px outline made from tightly bounded radial gradients (no Gaussian blur or backdrop filter), white normally and pastel pink in the alternate theme and a brief expanding click echo. Do not intercept pointer events. Keep native cursor behavior in modal dialogs and when animations are disabled. Touch users should not see a fake mouse cursor.
 
 ## Music and equalizer
 

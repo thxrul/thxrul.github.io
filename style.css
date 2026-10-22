@@ -353,7 +353,7 @@ a::before { --link-x: inherit; }
 
 /* The browser composites the soft-dot cursor itself, independently of JS load. */
 @media (hover: hover) and (pointer: fine) {
-    html.custom-cursor-ready:not(.motion-reduced), html.custom-cursor-ready:not(.motion-reduced) :is(a, button, .project-dialog-handle) { cursor: url('assets/cursor.svg?v=20261022-2') 10 10, auto; }
+    html.custom-cursor-ready:not(.motion-reduced), html.custom-cursor-ready:not(.motion-reduced) :is(a, button, .project-dialog-handle) { cursor: url('assets/cursor.svg?v=20261022-3') 10 10, auto; }
     body.project-dialog-open, body.project-dialog-open :is(a, button, .project-dialog-handle) { cursor: auto; }
     body.project-dialog-open button { cursor: pointer; }
 }
@@ -375,7 +375,7 @@ main, footer { position: relative; z-index: 1; }
 ::view-transition-old(root) { z-index: 1; }
 ::view-transition-new(root) { z-index: 2; }
 @media (hover: hover) and (pointer: fine) {
-    html.theme-tuffest.custom-cursor-ready:not(.motion-reduced), html.theme-tuffest.custom-cursor-ready:not(.motion-reduced) :is(a, button, .project-dialog-handle) { cursor: url('assets/cursor-pink.svg?v=20261022-2') 10 10, auto; }
+    html.theme-tuffest.custom-cursor-ready:not(.motion-reduced), html.theme-tuffest.custom-cursor-ready:not(.motion-reduced) :is(a, button, .project-dialog-handle) { cursor: url('assets/cursor-pink.svg?v=20261022-3') 10 10, auto; }
     html.theme-tuffest body.project-dialog-open, html.theme-tuffest body.project-dialog-open :is(a, button, .project-dialog-handle) { cursor: auto; }
     html.theme-tuffest body.project-dialog-open button { cursor: pointer; }
 }
@@ -388,3 +388,6 @@ main, footer { position: relative; z-index: 1; }
 .theme-tuffest .completed .milestone-status { color: #f5b2cf; }
 .theme-tuffest .current .milestone-status { color: #df94b6; }
 .theme-tuffest .milestone:not(:last-child)::after { background: #a77790; }
+
+/* Cursor softness stays inside its artwork; it never filters the page beneath. */
+#cursor, #cursor::after { filter: none; -webkit-backdrop-filter: none; backdrop-filter: none; }
