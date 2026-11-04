@@ -1,4 +1,8 @@
-# Background and carousel verification — 4 November 2026
+# Background and repository verification — 4 November 2026
+
+## Current stationary cluster
+
+The repository carousel was subsequently replaced by one stationary set of six 64 × 64 px squircles, arranged three across with 8 px of overlap. It performs no continuous track animation and creates no duplicate cards. Hover still opens the full-description preview; touch opens the dialog. Chromium 151 checks passed at 390 and 1366 px for stationary positions over time, hover/touch, layout switching, no horizontal overflow and no page errors. The older measurements below describe the previous moving version and are retained for historical comparison; they are not measurements of this release.
 
 The interaction blur came from reducing the full-screen dot renderer to 25% resolution and enlarging it on hover. Resolution now stays fixed, with the same canvas displayed at idle and during interaction. The renderer clears only recently disturbed regions and updates spring state only for affected rows; untouched state stays on the GPU. All 9,017 dots remain at 1366 × 768. The original hold response remains.
 

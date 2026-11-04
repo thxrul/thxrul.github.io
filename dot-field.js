@@ -4,7 +4,7 @@ window.startAcceleratedDotField = function (staticCanvas, options) {
     if (!window.Worker || !HTMLCanvasElement.prototype.transferControlToOffscreen) return false;
     const canvas=document.createElement('canvas');canvas.id='dot-field-gpu';canvas.setAttribute('aria-hidden','true');
     let worker;
-    try { worker=new Worker('dot-field-worker.js?v=20261104-2'); }
+    try { worker=new Worker('dot-field-worker.js?v=20261104-3'); }
     catch { return false; }
     staticCanvas.after(canvas);canvas.dotWorker=worker;
     let failed=false, ready=false, initTimer;

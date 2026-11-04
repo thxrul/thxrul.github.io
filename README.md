@@ -53,8 +53,8 @@ Detailed measurements and limitations: [performance checks](docs/performance-che
 Complete reusable specification: [website recreation prompt](docs/website-recreation-prompt.md).
 
 
-## Repository carousel
+## Repository icon cluster
 
-Projects default to a continuously right-moving strip of small, icon-only buttons. Hovering morphs an icon into a large stationary panel with the repository name, metadata and full description (scrollable when long). Moving away collapses it back to the icon strip. The expanded preview stays in place while the other repositories continue behind it; clicking or tapping opens the existing detailed dialog. Pause stops the strip. The icon cycles through carousel, list and grid, remembering the selection. Keyboard focus and reduced motion use a stationary list. Offscreen, hidden-tab and modal states pause the strip.
+Projects default to a stationary, tightly packed cluster of overlapping 64 px squircles. Hovering morphs an icon into a large panel with the repository name, metadata and full description (scrollable when long); leaving the panel collapses it. Clicking or tapping opens the existing detailed dialog. The icon control cycles between icons, list and grid, remembering the selection. Keyboard focus exposes a stationary text list, and reduced motion shows the hover panel without its morph animation.
 
 Public repositories load automatically from GitHub, with pagination and a 15-minute browser cache. New visits refresh stale data. `projects.json` remains the place to override descriptions and presentation for repositories with matching IDs. New repositories use their GitHub description and language automatically. A failed or rate-limited request keeps the last cached repository list; without a cache, the checked-in projects remain available. No GitHub token is shipped to visitors.
