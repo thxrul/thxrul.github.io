@@ -12,12 +12,12 @@ export function mountCarousel(projects, container, openProject) {
         const source = container.querySelector(`[data-project-id="${CSS.escape(project.id)}"]`);
         const card = source.cloneNode(true); card.classList.add('repository-tile'); card.removeAttribute('aria-expanded');
         const number = document.createElement('span'); number.className = 'repository-number'; number.textContent = String(projects.indexOf(project) + 1).padStart(2, '0'); number.setAttribute('aria-hidden','true');
-        const summary = document.createElement('span'); summary.className = 'repository-summary'; summary.textContent = Array.isArray(project.description) ? project.description[0] : project.description;
+        const summary = document.createElement('span'); summary.className = 'repository-summary'; summary.textContent = Array.isArray(project.description) ? project.description.join('\n\n') : project.description;
         card.append(number, summary); group.append(card);
     }
     // Repeat small collections to cover the viewport. Only the first copy enters tab order.
     const originalCards = [...group.children];
-    const repeats = Math.max(1, Math.ceil(6 / projects.length));
+    const repeats = Math.max(1, Math.ceil(14 / projects.length));
     for (let i = 1; i < repeats; i++) for (const source of originalCards) {
         const copy = source.cloneNode(true); copy.tabIndex = -1; copy.setAttribute('aria-hidden', 'true'); group.append(copy);
     }
@@ -61,13 +61,18 @@ export function mountCarousel(projects, container, openProject) {
         preview.replaceChildren(...[...button.children].filter(node => !node.classList.contains('repository-number')).map(node => node.cloneNode(true)));
         const more = document.createElement('span'); more.className = 'repository-more'; more.textContent = 'Explore repository ↗'; preview.append(more);
         preview.dataset.projectId = project.id; preview.setAttribute('aria-label', `Open ${project.name} project details`); preview.setAttribute('aria-haspopup', 'dialog'); preview.setAttribute('aria-expanded', 'false'); preview.hidden = false;
-        const width = Math.min(430, bounds.width - 32);
+        const width = Math.min(600, bounds.width - 32);
         const left = Math.max(16, Math.min(bounds.width - width - 16, source.left - bounds.left + source.width / 2 - width / 2));
         preview.style.width = `${width}px`; preview.style.left = `${left}px`;
         preview.getAnimations().forEach(a => a.cancel());
-        preview.animate([{ transform: 'translateY(12px) scale(.88)', opacity: .4 }, { transform: 'translateY(0) scale(1)', opacity: 1 }], { duration: 330, easing: 'cubic-bezier(.22,1,.36,1)' });
+        const height = preview.getBoundingClientRect().height;
+        preview.animate([{ transform: `translate(${source.left - bounds.left - left}px,${source.top - bounds.top - 24}px) scale(${source.width / width},${source.height / height})`, opacity: .3 }, { transform: 'none', opacity: 1 }], { duration: 380, easing: 'cubic-bezier(.22,1,.36,1)' });
     }
     track.addEventListener('pointerover', event => { if (event.pointerType === 'mouse' && matchMedia('(hover: hover)').matches) { const card = event.target.closest('.repository-tile'); if (card) showPreview(card); } });
+    function leaveItem(event) { if (!event.relatedTarget?.closest?.('.repository-tile, .project-hover-preview')) { clearTimeout(leaveTimer); leaveTimer = setTimeout(dismissPreview, 120); } }
+    track.addEventListener('pointerout', leaveItem);
+    preview.addEventListener('pointerenter', () => clearTimeout(leaveTimer));
+    preview.addEventListener('pointerleave', leaveItem);
     stage.addEventListener('pointerleave', () => { leaveTimer = setTimeout(dismissPreview, 120); });
     stage.addEventListener('pointerenter', () => clearTimeout(leaveTimer));
     stage.addEventListener('click', event => { const button = event.target.closest('[data-project-id]'); const project = projectFor(button); if (project) void openProject(project, button); });

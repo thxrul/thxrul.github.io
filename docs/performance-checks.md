@@ -33,3 +33,12 @@ Chrome page throttling does not throttle dedicated worker execution. An addition
 ## Repository updates
 
 GitHub's public API supplies repository membership and metadata, with pagination and a 15-minute browser cache. New visits refresh stale data. Entries in `projects.json` override matching repositories' descriptions and presentation. Failed requests retain the last successful cache or the checked-in list. No token is included in client code.
+
+## Icon-only carousel follow-up
+
+Collapsed items are now 64 × 64 px icons. Hover morphs an icon into a panel up to 600 px wide showing the complete description; moving away dismisses it. Other icons continue moving. Desktop hover, pointer handoff/collapse, mobile tapping, both palettes and overflow checks passed. The background renderer is unchanged.
+
+- 1× CPU, music and expanded hover preview: 59.8 page updates/s, 40.8 field updates/s, 33.4 ms field gap p95.
+- 40× CPU, music and expanded hover preview: 13.6 page updates/s, 27.1 field updates/s, 66.7 ms field gap p95.
+
+These focused follow-up measurements use the same software-rendering setup and retain the limitations described above.
