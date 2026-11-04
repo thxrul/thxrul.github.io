@@ -45,8 +45,8 @@ function initialize() {
     #define scale frameData.w
     void main() {
         vec2 p = pointer - home;
-        float distance = length(p);
-        float influence = enabled * max(0., 1. - distance / 190.);
+        float distanceSquared = dot(p,p);
+        float influence = enabled > 0. && distanceSquared < 36100. ? 1. - sqrt(distanceSquared) / 190. : 0.;
         float gentle = influence * influence * mix(-.3, .55, pressed);
         float pull = influence > 0. && concentration > 0. ? mix(gentle, (1. - exp(-influence * 3.)) * .88, concentration) : gentle;
         vec2 target = p * pull;
@@ -71,7 +71,7 @@ function initialize() {
         center = vec2(point.x, 1. - point.y) * framebuffer;
         // A padded sprite and true subpixel center prevent low-resolution
         // points from snapping between physical pixels under overload.
-        gl_PointSize = max(3., 2. * (.85 + influence * .7) * scale + 2.5);
+        gl_PointSize = max(3., 2. * (.85 + influence * .7) * scale + 2.);
     }`;
     const fragment = `#version 300 es
     precision highp float;
@@ -88,7 +88,7 @@ function initialize() {
         // Bilinear splats conserve the brightness and subpixel centroid of
         // unresolved dots instead of dropping or snapping their centers.
         float splat = max(0., 1. - delta.x) * max(0., 1. - delta.y) * 3.14159265 * radius * radius;
-        float coverage = mix(splat, disk, smoothstep(.4, .65, radius));
+        float coverage = radius >= .65 ? disk : mix(splat, disk, smoothstep(.4, .65, radius));
         float opacity = (.48 + bloom * .38) * .55 * coverage;
         color = vec4(ink, opacity);
     }`;
@@ -121,14 +121,16 @@ function initialize() {
     const frameValues = new Float32Array(8);
     const homeLocation = gl.getAttribLocation(program, 'home'), stateLocation = gl.getAttribLocation(program, 'state');
     let homes;
-    let width = 0, height = 0, scale = 1, count = 0, current = 0;
+    let width = 0, height = 0, scale = 1, count = 0, current = 0, columns = 0;
     let frame = null, lastTime = 0, lastScroll = -Infinity, settleUntil = 0, lost = false;
     let ripple = null;
+    let paintAll = true, damage = [];
     let quality = 1, sampleFrames = 0, sampleTime = 0, severeFrames = 0;
     const pointer = { x: 0, y: 0, active: false, pressed: false, at: 0, touch: false };
     const smooth = { x: 0, y: 0 };
     function permitted() { return !lost && enabled; }
     function palette() {
+        paintAll = true;
         const pink = alternate;
         const bg = pink ? [25/255,23/255,27/255] : [17/255,17/255,19/255];
         gl.clearColor(...bg, 1);
@@ -138,9 +140,35 @@ function initialize() {
         frameValues[0]=smooth.x;frameValues[1]=smooth.y;frameValues[2]=pointer.active?1:0;frameValues[3]=pointer.pressed?1:0;
         frameValues[4]=steps;frameValues[5]=concentration;frameValues[6]=ripple?(time-ripple.at)/1000:-1;frameValues[7]=scale;
         gl.uniform4fv(uniforms['frameValues[0]'],frameValues);
+        // Keep the native-resolution image. Repaint only recently disturbed areas,
+        // including settling trails and click waves; untouched dots stay cached.
+        let firstPoint=0, pointCount=count;
+        if (paintAll) { gl.disable(gl.SCISSOR_TEST); paintAll = false; }
+        else {
+            damage = damage.filter(area => time - area.at < 1500);
+            if (pointer.active) damage.push({x:smooth.x, y:smooth.y, radius:210, at:time});
+            if (ripple) damage.push({x:ripple.x, y:ripple.y, radius:360, at:time});
+            let left=width, top=height, right=0, bottom=0;
+            for (const area of damage) { left=Math.min(left,area.x-area.radius);top=Math.min(top,area.y-area.radius);right=Math.max(right,area.x+area.radius);bottom=Math.max(bottom,area.y+area.radius); }
+            const x=Math.max(0,Math.floor(left*scale)), y=Math.max(0,Math.floor(top*scale));
+            const endX=Math.min(canvas.width,Math.ceil(right*scale)), endY=Math.min(canvas.height,Math.ceil(bottom*scale));
+            gl.enable(gl.SCISSOR_TEST); gl.scissor(x,canvas.height-endY,Math.max(0,endX-x),Math.max(0,endY-y));
+            const spacing=24/Math.sqrt(5);
+            firstPoint=Math.max(0,Math.floor((top-12)/spacing)-1)*columns;
+            const endPoint=Math.min(count,(Math.ceil((bottom-12)/spacing)+2)*columns);
+            pointCount=Math.max(0,endPoint-firstPoint);
+        }
         gl.clear(gl.COLOR_BUFFER_BIT);
+        if (!pointCount) return;
+        // Copy resting state on the GPU, then simulate only rows touched by the effect.
+        if(pointCount<count) {
+            gl.bindBuffer(gl.COPY_READ_BUFFER,buffers[current+1]); gl.bindBuffer(gl.COPY_WRITE_BUFFER,buffers[2-current]);
+            gl.copyBufferSubData(gl.COPY_READ_BUFFER,gl.COPY_WRITE_BUFFER,0,0,count*16);
+            gl.bindBuffer(gl.COPY_READ_BUFFER,null); gl.bindBuffer(gl.COPY_WRITE_BUFFER,null);
+        }
         gl.bindVertexArray(arrays[current]); gl.bindTransformFeedback(gl.TRANSFORM_FEEDBACK, feedback[1-current]);
-        gl.beginTransformFeedback(gl.POINTS); gl.drawArrays(gl.POINTS, 0, count); gl.endTransformFeedback();
+        gl.bindBufferRange(gl.TRANSFORM_FEEDBACK_BUFFER,0,buffers[2-current],firstPoint*16,pointCount*16);
+        gl.beginTransformFeedback(gl.POINTS); gl.drawArrays(gl.POINTS, firstPoint, pointCount); gl.endTransformFeedback();
         gl.bindTransformFeedback(gl.TRANSFORM_FEEDBACK,null);
         current = 1-current;
     }
@@ -155,11 +183,11 @@ function initialize() {
         frame = null; lastTime = 0; sampleFrames=0;sampleTime=0;severeFrames=0; pointer.active = pointer.pressed = false; ripple = null;
 
         if (!lost && count) clearState();
-        if (!lost && count) render();
+        if (!lost && count) { paintAll = true; render(); }
     }
     function resize() {
         if (lost) return;
-        const nextScale = Math.min(dpr, 1.5) * quality;
+        const nextScale = Math.min(dpr, 1.5);
         if (width === viewWidth && height === viewHeight && scale === nextScale) return;
         if (frame !== null) cancelAnimationFrame(frame); frame = null; lastTime = 0;
         width = viewWidth; height = viewHeight; scale = nextScale;
@@ -167,7 +195,7 @@ function initialize() {
 
         gl.viewport(0,0,canvas.width,canvas.height);gl.uniform2f(uniforms.framebuffer,canvas.width,canvas.height);
         gl.uniform2f(uniforms.viewport,width,height);
-        const spacing = 24 / Math.sqrt(5), columns = Math.ceil((width-12)/spacing), rows = Math.ceil((height-12)/spacing);
+        const spacing = 24 / Math.sqrt(5), rows = Math.ceil((height-12)/spacing); columns = Math.ceil((width-12)/spacing);
         count = columns * rows; postMessage({type:"ready",count});
         homes = new Float32Array(count*2);
         for (let row=0;row<rows;row++) for(let col=0;col<columns;col++) { const i=(row*columns+col)*2; homes[i]=12+col*spacing; homes[i+1]=12+row*spacing; }
@@ -183,21 +211,25 @@ function initialize() {
             const tf=gl.createTransformFeedback(); feedback.push(tf); gl.bindTransformFeedback(gl.TRANSFORM_FEEDBACK,tf); gl.bindBufferBase(gl.TRANSFORM_FEEDBACK_BUFFER,0,buffer);
         }
         gl.bindVertexArray(null); gl.bindTransformFeedback(gl.TRANSFORM_FEEDBACK,null);gl.bindBuffer(gl.ARRAY_BUFFER,null);gl.bindBuffer(gl.TRANSFORM_FEEDBACK_BUFFER,null);
-        current=0; pointer.active=pointer.pressed=false; ripple=null; palette(); render();
+        current=0; pointer.active=pointer.pressed=false; ripple=null; damage=[]; palette(); render();
     }
-    function requestDraw() { if(frame===null && permitted()) frame=requestAnimationFrame(draw); }
+    function requestDraw() {
+        if(frame===null && permitted()) {
+            // A settled hover/hold may be left on screen indefinitely. Keep its old
+            // area dirty when motion resumes so it can spring home without trails.
+            if(!lastTime) damage.push({x:smooth.x,y:smooth.y,radius:210,at:performance.now()});
+            frame=requestAnimationFrame(draw);
+        }
+    }
     function draw(time) {
         frame=null; if(!permitted()) return;
         const gap=lastTime?time-lastTime:1000/60;
         const elapsed=Math.min(50,gap); lastTime=time;
         sampleFrames++; sampleTime+=gap; severeFrames=gap>50?severeFrames+1:0;
-        // Average a full second; isolated startup stalls must not keep lowering quality.
+        // Overload can simplify decoration, but never lower dot raster resolution.
         if(sampleFrames>=60 || severeFrames>=4) {
             if(sampleTime/sampleFrames>17.5 && quality>.26) {
                 quality=Math.max(.25,quality*Math.min(.7,Math.sqrt(16/(sampleTime/sampleFrames))));
-                scale=Math.min(dpr,1.5)*quality;
-                canvas.width=Math.round(width*scale);canvas.height=Math.round(height*scale);
-                gl.viewport(0,0,canvas.width,canvas.height);gl.uniform2f(uniforms.framebuffer,canvas.width,canvas.height);
                 postMessage({type:'quality',quality});
             }
             sampleFrames=0;sampleTime=0;severeFrames=0;
@@ -233,7 +265,7 @@ function initialize() {
         else if(m.type==='halo-init'){haloCanvas=m.canvas;haloContext=haloCanvas.getContext('2d');}
         else if(m.type==='halo'){renderHalo(m);}
         else if(m.type==='resize'){viewWidth=m.width;viewHeight=m.height;dpr=m.dpr;resize();}
-        else if(m.type==='quality'){quality=Math.min(quality,m.value);scale=Math.min(dpr,1.5)*quality;canvas.width=Math.round(width*scale);canvas.height=Math.round(height*scale);gl.viewport(0,0,canvas.width,canvas.height);gl.uniform2f(uniforms.framebuffer,canvas.width,canvas.height);}
+        else if(m.type==='quality'){quality=Math.min(quality,m.value);}
         else if(m.type==='inspect'){
             let physics;
             if(m.physics){

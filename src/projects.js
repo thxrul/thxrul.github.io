@@ -3,6 +3,8 @@
  * No framework, projection engine, or permanent animation loop is needed.
  */
 import fallbackProjects from '../projects.json';
+import { mountCarousel } from './carousel.js';
+import { publicProjects } from './repositories.js';
 
 const reduced = () => document.body.classList.contains('motion-reduced');
 const springSteps = Array.from({ length: 25 }, (_, i) => {
@@ -221,6 +223,7 @@ async function mountProjects() {
         if (validProjects(latest)) projects = latest;
     } catch { /* Keep the bundled copy if an edit is malformed or the network is unavailable. */ }
     finally { clearTimeout(timeout); }
+    projects = await publicProjects(projects);
     const fragment = document.createDocumentFragment();
     for (const project of projects) {
         const entry = element('article', 'project-entry');
@@ -238,6 +241,7 @@ async function mountProjects() {
     const focusedId = document.activeElement?.closest('a[data-project-id]')?.dataset.projectId;
     container.replaceChildren(fragment);
     if (focusedId) container.querySelector(`button[data-project-id="${CSS.escape(focusedId)}"]`)?.focus({ preventScroll: true });
+    mountCarousel(projects, container, openProject);
     // The existing one-shot reveal is compositor-only and releases its layers on completion.
     if ('IntersectionObserver' in window) {
         const observer = new IntersectionObserver(entries => entries.forEach(({ target, isIntersecting }) => {

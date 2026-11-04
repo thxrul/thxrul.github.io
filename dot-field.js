@@ -4,7 +4,7 @@ window.startAcceleratedDotField = function (staticCanvas, options) {
     if (!window.Worker || !HTMLCanvasElement.prototype.transferControlToOffscreen) return false;
     const canvas=document.createElement('canvas');canvas.id='dot-field-gpu';canvas.setAttribute('aria-hidden','true');
     let worker;
-    try { worker=new Worker('dot-field-worker.js?v=20261022-2'); }
+    try { worker=new Worker('dot-field-worker.js?v=20261104-1'); }
     catch { return false; }
     staticCanvas.after(canvas);canvas.dotWorker=worker;
     let failed=false, ready=false, initTimer;
@@ -12,6 +12,11 @@ window.startAcceleratedDotField = function (staticCanvas, options) {
     const send=m=>{if(!failed)worker.postMessage(m)};
     const allowed=()=>!failed&&options.motion()&&!document.hidden&&!document.body.classList.contains('project-dialog-open');
     const size=()=>({width:innerWidth,height:innerHeight,dpr:devicePixelRatio||1});
+    function simplifyDecoration(){
+        if(document.documentElement.classList.contains('performance-lite'))return;
+        document.documentElement.classList.add('performance-lite');
+        window.dispatchEvent(new Event('performancechange'));
+    }
     const spacing=24/Math.sqrt(5);
     function paintStatic(){
         const scale=Math.min(devicePixelRatio||1,1.5),c=staticCanvas.getContext('2d');
@@ -27,25 +32,25 @@ window.startAcceleratedDotField = function (staticCanvas, options) {
         if(monitorLast){monitorTime+=time-monitorLast;monitorCount++;}
         monitorLast=time;
         if(monitorCount>=12 || monitorCount>=4 && monitorTime/monitorCount>50){
-            if(monitorTime/monitorCount>24 && quality>.26){quality=Math.max(.25,quality*Math.min(.7,Math.sqrt(16/(monitorTime/monitorCount))));send({type:'quality',value:quality});document.documentElement.classList.add('performance-lite');canvas.dataset.quality=String(quality);}
+            if(monitorTime/monitorCount>24 && quality>.26){quality=Math.max(.25,quality*Math.min(.7,Math.sqrt(16/(monitorTime/monitorCount))));send({type:'quality',value:quality});simplifyDecoration();canvas.dataset.quality=String(quality);}
             monitorTime=monitorCount=0;
         }
         if(time<monitorDeadline && allowed())monitorFrame=requestAnimationFrame(monitor);
         else monitorLast=0;
     }
     function fallback(){
-        if(failed)return;failed=true;clearTimeout(initTimer);worker.terminate();canvas.remove();options.fallback();
+        if(failed)return;failed=true;clearTimeout(initTimer);worker.terminate();canvas.remove();staticCanvas.hidden=false;options.fallback();
     }
     worker.addEventListener('error',fallback);
     worker.addEventListener('message',event=>{
         if(event.data.type==='failed'){fallback();return;}
         if(event.data.type==='ready'){
-            ready=true;clearTimeout(initTimer);canvas.dataset.renderer='webgl2-worker';canvas.dataset.dotCount=String(event.data.count);
+            ready=true;canvas.hidden=false;staticCanvas.hidden=true;clearTimeout(initTimer);canvas.dataset.renderer='webgl2-worker';canvas.dataset.dotCount=String(event.data.count);
             document.documentElement.classList.add('custom-cursor-ready');
             options.onReady?.(worker);
         } else if(event.data.type==='quality'){
             canvas.dataset.quality=String(event.data.quality);
-            document.documentElement.classList.add('performance-lite');
+            simplifyDecoration();
         }
     });
     try {
@@ -55,7 +60,7 @@ window.startAcceleratedDotField = function (staticCanvas, options) {
     } catch {fallback();return true;}
     function aim(event,type='aim'){
         touch=event.pointerType==='touch';active=true;
-        if(canvas.hidden)canvas.hidden=false;
+        if(ready && canvas.hidden)canvas.hidden=false;
         send({type,x:event.clientX,y:event.clientY,pressed});
         monitorDeadline=pressed?Math.max(performance.now()+800,pressedAt+13800):performance.now()+800;
         if(monitorFrame===null)monitorFrame=requestAnimationFrame(monitor);
@@ -81,7 +86,7 @@ window.startAcceleratedDotField = function (staticCanvas, options) {
             clickAnimation?.cancel();clickAnimation=cursor.animate([{transform:'scale(.6)',opacity:.75},{transform:'scale(3)',opacity:0}],{duration:480,easing:'ease-out',pseudoElement:'::after'});
         }
     },{passive:true});
-    function reset(){if(failed)return;pressed=active=false;canvas.hidden=true;if(monitorFrame!==null)cancelAnimationFrame(monitorFrame);monitorFrame=null;monitorLast=0;document.body.classList.remove('matrix-holding');send({type:'reset'});}
+    function reset(){if(failed)return;pressed=active=false;if(monitorFrame!==null)cancelAnimationFrame(monitorFrame);monitorFrame=null;monitorLast=0;document.body.classList.remove('matrix-holding');send({type:'reset'});}
     window.addEventListener('contextmenu',event=>{if(pressed)event.preventDefault()});
     window.addEventListener('scroll',()=>{lastScroll=performance.now();if(active)reset()},{passive:true});
     let resizeTimer;

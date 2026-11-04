@@ -38,7 +38,7 @@ Commit the changed source and the resulting `assets/projects.js`. Project descri
 
 ## Performance
 
-The static dot field is cached. An OffscreenCanvas worker runs WebGL2 transform feedback, keeping individual spring positions and velocities on the GPU and rendering off the main thread. The GPU canvas stays stationary in viewport coordinates and sleeps after settling; it does not run while scrolling, hidden, or behind a dialog. The equalizer draws in the same worker at up to 30 updates/second only while visible and playing; waveform energy is sampled separately. Pointer decorations share cached geometry and one frame callback. The native SVG cursor moves independently of JavaScript load. Sustained missed frames lower raster resolution and decorative effects while retaining the full dot count and original hold physics. Section reveals use transforms and opacity without animated blurs. The dialog module loads only as the project section approaches the viewport.
+The static dot field is cached. An OffscreenCanvas worker runs WebGL2 transform feedback, keeping individual spring positions and velocities on the GPU and rendering off the main thread. The GPU canvas stays stationary in viewport coordinates and sleeps after settling; it does not run while scrolling, hidden, or behind a dialog. The equalizer draws in the same worker at up to 30 updates/second only while visible and playing; waveform energy is sampled separately. Pointer decorations share cached geometry and one frame callback. The native SVG cursor moves independently of JavaScript load. Dot raster resolution stays fixed (device pixel ratio capped at 1.5), including under overload. The GPU canvas retains its native-resolution image at idle and during interaction; only recently disturbed regions are cleared and repainted. Overload simplifies decorative effects while retaining sharpness, the full dot count and original hold physics. Section reveals use transforms and opacity without animated blurs. The dialog module loads only as the project section approaches the viewport.
 
 ## Pointer, typing, and hidden theme
 
@@ -51,3 +51,10 @@ Type `tuffestcolor` on the page (outside a dialog or editable control) to toggle
 Detailed measurements and limitations: [performance checks](docs/performance-checks.md).
 
 Complete reusable specification: [website recreation prompt](docs/website-recreation-prompt.md).
+
+
+## Repository carousel
+
+Projects default to a continuously right-moving strip. Hovering opens a stationary expanded preview while the other repositories continue behind it; clicking or tapping opens the existing detailed dialog. Pause stops the strip. The icon cycles through carousel, list and grid, remembering the selection. Keyboard focus and reduced motion use a stationary list. Offscreen, hidden-tab and modal states pause the strip.
+
+Public repositories load automatically from GitHub, with pagination and a 15-minute browser cache. New visits refresh stale data. `projects.json` remains the place to override descriptions and presentation for repositories with matching IDs. New repositories use their GitHub description and language automatically. A failed or rate-limited request keeps the last cached repository list; without a cache, the checked-in projects remain available. No GitHub token is shipped to visitors.

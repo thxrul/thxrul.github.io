@@ -178,17 +178,6 @@ siteHeader.addEventListener('focusin', () => {
 
 const projectsLayoutToggle = document.getElementById('projects-layout-toggle');
 const projectList = document.getElementById('project-list');
-function setProjectLayout(grid) {
-    projectList.classList.toggle('is-grid', grid);
-    projectsLayoutToggle.setAttribute('aria-pressed', String(grid));
-    projectsLayoutToggle.setAttribute('aria-label', grid ? 'Use list layout' : 'Use grid layout');
-    projectsLayoutToggle.title = grid ? 'Use list layout' : 'Use grid layout';
-    try { localStorage.setItem('project-layout', grid ? 'grid' : 'list'); } catch {}
-}
-try { setProjectLayout(localStorage.getItem('project-layout') === 'grid'); } catch {}
-projectsLayoutToggle.hidden = false;
-projectsLayoutToggle.addEventListener('click', () => setProjectLayout(!projectList.classList.contains('is-grid')));
-
 // The generated directory index supplies file tags, embedded artwork, and track order.
 const audio = document.getElementById('site-audio');
 audio.volume = 0.2;
@@ -765,7 +754,7 @@ document.addEventListener('focusin', event => {
 // Fetch and parse the dialog library only as the project section approaches.
 let projectModulePromise;
 function loadProjectDialogs() {
-    if (!projectModulePromise) projectModulePromise = import('./assets/projects.js?v=20261022-2').then(module => module.projectsReady).catch(error => {
+    if (!projectModulePromise) projectModulePromise = import('./assets/projects.js?v=20261104-1').then(module => module.projectsReady).catch(error => {
         projectModulePromise = null;
         throw error;
     });
@@ -787,6 +776,7 @@ projectList.addEventListener('click', async event => {
     const id = fallback.dataset.projectId, url = fallback.href;
     try {
         await loadProjectDialogs();
+        projectList.showProjectList?.();
         projectList.querySelector(`button[data-project-id="${CSS.escape(id)}"]`)?.click();
     } catch { window.location.assign(url); }
 });

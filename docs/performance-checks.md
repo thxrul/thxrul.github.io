@@ -1,39 +1,35 @@
-# Dot field performance checks
+# Background and carousel verification — 4 November 2026
 
-The requested fivefold-density field now runs in an OffscreenCanvas worker using WebGL2 transform feedback. Individual dot springs stay on the GPU. The static background is cached. The GPU canvas stays stationary in viewport coordinates, avoiding per-frame page style changes and asynchronous patch-boundary jumps. It draws only during interaction and settling. The audio equalizer also draws in the worker. The soft-dot cursor uses the browser's native SVG cursor support, so cursor movement does not depend on JavaScript frame timing.
+The interaction blur came from reducing the full-screen dot renderer to 25% resolution and enlarging it on hover. Resolution now stays fixed, with the same canvas displayed at idle and during interaction. The renderer clears only recently disturbed regions and updates spring state only for affected rows; untouched state stays on the GPU. All 9,017 dots remain at 1366 × 768. The original hold response remains.
 
-## Test setup
+The repository strip uses one compositor animation. Its expanded hover preview stays stationary while other cards continue moving. Overload switches the strip to 30 small movement steps per second and simplifies decoration, without lowering dot resolution. Offscreen, hidden-tab and modal states pause the carousel.
 
-Chromium 151.0.7922.173, Playwright 1.62.1, Linux headless browser, 1366 × 768 viewport. Music was playing. Each CPU case used a new page, three seconds of moving-pointer warmup, then four seconds of measured movement. Page CPU throttling used Chrome DevTools Protocol. Field rate comes from the worker's own clock and draw counter; main-page rate comes from page requestAnimationFrame. These measure browser update loops, not a physical display capture.
+## Performance measurements
 
-| Main-thread CPU slowdown | Field updates/sec | Main-page updates/sec | Field frame-gap p95 | Main long tasks (>50 ms) | Linear raster scale |
+Chromium 151, Playwright, Linux headless software rendering in a 2-vCPU / 8-GiB environment. Each case uses a fresh page, waits for initial typing to finish, warms pointer motion for three seconds, then measures four seconds. Music plays throughout. The previous release shows its stationary project list; the new release shows six repositories, the moving carousel and an expanded hover preview. Rates count animation callbacks, not physical display frames. This is not a physical test on the user's Windows/Ryzen laptop.
+
+| CPU slowdown | Previous field updates/s | New field updates/s | Previous page updates/s | New page updates/s | New field gap p95 |
 |---|---:|---:|---:|---:|---:|
-| 1× | 58.8 | 60.0 | 16.8 ms | 0 | 70% |
-| 6× | 56.5 | 59.4 | 33.2 ms | 0 | 25% |
-| 20× | 55.3 | 52.5 | 16.8 ms | 2 | 25% |
-| 40× | 59.5 | 33.7 | 16.8 ms | 8 | 25% |
+| 1× | 58.5 | 35.3 | 60.0 | 58.9 | 50.0 ms |
+| 6× | 44.6 | 27.1 | 55.4 | 52.6 | 66.7 ms |
+| 20× | 42.0 | 27.7 | 38.2 | 25.1 | 66.6 ms |
+| 40× | 34.4 | 20.7 | 15.7 | 10.0 | 83.4 ms |
 
-These measurements were repeated after adding the compact morphing header and cursor-origin theme ripple. Normal and 6× page updates stayed around 60/sec. The extreme 40× case recorded 59.5 field updates/sec and 33.7 page updates/sec. These results do not guarantee 60 fps for the whole website on every laptop and are not a physical test on the user's Windows/Ryzen system.
+The new field stays at 100% CSS-pixel resolution in every case (device pixel ratio is capped at 1.5); the old version fell to 25%. Normal page cadence remained close to 60/s, but the sharper field and extra carousel do cost performance in software rendering. Performance is **not identical** to the previous blurred version, and extreme throttling still stutters. These results cannot establish smooth performance on every laptop.
 
-Chromium's page CPU throttle does not throttle dedicated workers. An additional stress case therefore multiplied the measured execution time of **both worker animation and message callbacks by 40**, while also applying 40× page throttling and playing music. It recorded **52.4 field updates/sec** with **33.3 ms p95 frame gaps**; the main page recorded 27.5 updates/sec. This busy-wait workload is a conservative synthetic stress test, not a CPU-frequency or GPU-performance emulator.
+The first 20× run had a transient severe stall (5.8 field / 3.8 page updates/s). An isolated fresh-browser repeat measured the 20× row above. Timings varied substantially between runs; that outlier has not been concealed or treated as a reliable hardware prediction.
 
-## Adaptation and limits
+Chrome page throttling does not throttle dedicated worker execution. An additional test multiplied both worker animation and message callback execution time by 40, alongside 40× page throttling, music, moving repositories and hover expansion. It measured 22.9 field updates/s, 8.5 page updates/s and 66.8 ms field gap p95. This synthetic workload is not a CPU/GPU emulator.
 
-Every test retained **9,017 dots**, corresponding to five times the former grid's area density. Under sustained overload, linear raster resolution can fall to 25% and decorative blur, spotlights and idle flourishes are reduced. Dot count, world positions, sensitivity and progressive hold math stay unchanged. The table reports the raster scale selected in each test. The early CPU-only fivefold-density implementation fell to about 7.4 updates/sec at 20× and 3.2 at 40×, which prompted the worker/GPU redesign.
+## Functional checks
 
-WebGL2 or worker failures restore the compatible Canvas2D renderer. That fallback has less headroom than the accelerated path. Reduced motion and the corner animation toggle remain available. Worker and page animation loops stop after effects settle, while scrolling, in hidden tabs, and behind project dialogs. Audio drawing stops when paused or offscreen.
+- Pixel readback: untouched background pixels remain identical during hover, forced overload and reset; old disturbed regions return exactly to their starting pixels after the pointer leaves.
+- Progressive hold concentrates dots; release settles; the worker sleeps at idle; WebGL reports no errors. Context loss restores the visible Canvas2D fallback.
+- The carousel moves left to right. Hover expansion remains stationary while the strip moves behind it. Pause, list/grid/carousel switching, dialogs, Escape, keyboard return and mobile touch opening pass.
+- Mobile overflow checks at 320, 390 and 768 px. Both themes pass the selected axe WCAG A/AA checks at 320, 390, 768 and 1440 px. Reduced motion defaults to a stationary list.
+- GitHub discovery returns six public repositories. Manual descriptions override GitHub descriptions. Fresh cached data avoids repeat requests; a rate-limit response falls back to checked-in projects when no cache exists.
+- Music volume remains 20%. Existing theme switching and project descriptions remain functional.
 
-## Functional verification
+## Repository updates
 
-- A rendered-pixel test at quarter resolution checked subpixel continuity: no four-CSS-pixel jumps or disappearing dots across the sampled pixel boundaries. Tiny unresolved dots use brightness-preserving interpolation.
-- Progressive hold and release checked against GPU particle-state readback; no WebGL errors. The original 250 ms delay, 2.5-second concentration buildup and spring response remain.
-- Both GPU and main-page animation loops checked for idle sleep after clicks and released holds.
-- GPU context loss checked for recovery without interrupting music.
-- Equalizer sensitivity groups checked for differing audio-driven levels; both audio modes start at 20% volume.
-- Hidden theme checked for the uploaded audio, opaque pastel-black surfaces, pink cursor/qualification accents, and unchanged layout geometry. Repeating the phrase restores the original mode.
-- Cursor-origin circular theme reveals checked at 320, 390, 768 and 1366 px, including reduced motion.
-- Half-height header (94 px desktop, 140 px mobile), smooth 5 px collapse, navigation scaling/fading, fixed page layout and keyboard restoration checked at those widths.
-- Normal and alternate themes audited at 320, 390, 768 and 1440 px, with no detected WCAG A/AA axe violations or horizontal page overflow in those checks.
-- All project dialogs checked for editable JSON descriptions, long content, keyboard focus, Escape, outside click, reduced motion, and static links without JavaScript.
-
-The alternate MP3 matches the supplied file byte-for-byte and is loaded only after the secret theme is activated.
+GitHub's public API supplies repository membership and metadata, with pagination and a 15-minute browser cache. New visits refresh stale data. Entries in `projects.json` override matching repositories' descriptions and presentation. Failed requests retain the last successful cache or the checked-in list. No token is included in client code.
