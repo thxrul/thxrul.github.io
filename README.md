@@ -53,8 +53,8 @@ Detailed measurements and limitations: [performance checks](docs/performance-che
 Complete reusable specification: [website recreation prompt](docs/website-recreation-prompt.md).
 
 
-## Repository icon cluster
+## Liquid repository blobs
 
-Projects default to a stationary, tightly packed cluster of overlapping 64 px squircles. Hovering morphs an icon into a large panel with the repository name, metadata and full description (scrollable when long); leaving the panel collapses it. Clicking or tapping opens the existing detailed dialog. The icon control cycles between icons, list and grid, remembering the selection. Keyboard focus exposes a stationary text list, and reduced motion shows the hover panel without its morph animation.
+Projects default to a field of liquid blobs that drift around on their own with slow, organic motion and softly push each other apart. Each blob keeps breathing its outline, and hovering swells it into a large rounded card with the repository name, metadata and full description (scrollable when long); neighbours slide away as it grows. Leaving the card returns it to the drifting field. Clicking or tapping opens the existing detailed dialog. The icon control cycles between blobs, list and grid, remembering the selection. Keyboard focus exposes a stationary text list, reduced motion stops the drift and morph animation, and the field pauses while off screen, hidden, or behind a dialog.
 
 Public repositories load automatically from GitHub, with pagination and a 15-minute browser cache. New visits refresh stale data. `projects.json` remains the place to override descriptions and presentation for repositories with matching IDs. New repositories use their GitHub description and language automatically. A failed or rate-limited request keeps the last cached repository list; without a cache, the checked-in projects remain available. No GitHub token is shipped to visitors.
