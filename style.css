@@ -392,45 +392,37 @@ main, footer { position: relative; z-index: 1; }
 /* Cursor softness stays inside its artwork; it never filters the page beneath. */
 #cursor, #cursor::after { filter: none; -webkit-backdrop-filter: none; backdrop-filter: none; }
 
-/* Liquid repository blobs: each shape drifts on its own and swells under the pointer. */
+/* Liquid repository blobs: each shape drifts on its own and swells in place under the pointer. */
 .project-view-controls { display: flex; align-items: center; gap: 10px; }
 #projects-layout-toggle[data-view="icons"] .grid-icon, #projects-layout-toggle[data-view="grid"] .grid-icon { display: none; }
 #projects-layout-toggle[data-view="icons"] .list-icon { display: block; }
 #projects-layout-toggle[data-view="list"] .grid-icon { display: block; }
 #projects-layout-toggle[data-view="list"] .list-icon, #projects-layout-toggle[data-view="grid"] .list-icon { display: none; }
 #projects-layout-toggle[data-view="grid"]::before { content: '↔'; font-size: 24px; }
-.repository-carousel { position: relative; height: 440px; overflow: clip; isolation: isolate; border-block: 1px solid var(--line); background: radial-gradient(70% 110% at 50% 50%, #ffffff06, transparent 72%); }
-.repository-field { --blob-open-w: 380px; --blob-open-h: 220px; position: absolute; inset: 0; }
-.repository-tile { position: absolute; left: 0; top: 0; width: 88px; height: 88px; margin: 0; padding: 0; border: 1px solid #ffffff2e; border-radius: 48% 52% 55% 45% / 52% 44% 56% 48%; background: radial-gradient(120% 120% at 30% 18%, #2c2c33, #17171a 74%); color: var(--text); font: inherit; text-align: left; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0; overflow: hidden; will-change: transform; box-shadow: inset 0 1px 0 #ffffff14, 0 14px 36px #00000059; -webkit-backdrop-filter: none; backdrop-filter: none; animation: blob-morph var(--blob-morph, 11s) ease-in-out infinite alternate; transition: width 620ms cubic-bezier(.22,1,.36,1), height 620ms cubic-bezier(.22,1,.36,1), padding 500ms cubic-bezier(.22,1,.36,1), border-radius 620ms cubic-bezier(.22,1,.36,1), background 320ms ease, border-color 320ms ease; }
-.repository-tile:hover { z-index: 3; }
-.repository-tile.is-open { z-index: 4; width: var(--blob-open-w); height: var(--blob-open-h); padding: 22px; align-items: stretch; justify-content: flex-start; gap: 12px; border-radius: 28px; border-color: #eeeeea5c; background: radial-gradient(120% 140% at 20% 0%, #26262c, #1a1a1e 78%); box-shadow: inset 0 1px 0 #ffffff1a, 0 28px 70px #000000a6; overflow: auto; overscroll-behavior: contain; scrollbar-width: thin; animation: none; }
-.repository-tile .project-symbol { width: 46px; height: 46px; border: 0; background: transparent; font-size: 18px; transition: width 420ms cubic-bezier(.22,1,.36,1), height 420ms cubic-bezier(.22,1,.36,1), font-size 420ms ease, background-color 320ms ease, border-radius 320ms ease; }
-.repository-tile.is-open .project-symbol { width: 54px; height: 54px; font-size: 20px; border: 1px solid #ffffff1f; border-radius: 16px; background: #ffffff0d; }
+.repository-carousel { position: relative; height: 460px; overflow: clip; isolation: isolate; border-block: 1px solid var(--line); background: radial-gradient(70% 110% at 50% 50%, #ffffff06, transparent 72%); }
+.repository-field { position: absolute; inset: 0; }
+.repository-tile { position: absolute; left: 0; top: 0; width: 128px; height: 128px; margin: 0; padding: 0; border: 1px solid #ffffff2e; border-radius: 48% 52% 55% 45% / 52% 44% 56% 48%; background: radial-gradient(120% 120% at 30% 18%, #2c2c33, #17171a 74%); color: var(--text); font: inherit; text-align: left; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0; overflow: hidden; will-change: transform; box-shadow: inset 0 1px 0 #ffffff14, 0 14px 36px #00000059; -webkit-backdrop-filter: none; backdrop-filter: none; animation: blob-morph var(--blob-morph, 11s) ease-in-out infinite alternate; transition: width 560ms cubic-bezier(.22,1,.36,1), height 560ms cubic-bezier(.22,1,.36,1), border-color 320ms ease, box-shadow 320ms ease, background 320ms ease; }
+.repository-tile .project-symbol { width: 52px; height: 52px; border: 0; background: transparent; font-size: 22px; transition: width 460ms cubic-bezier(.22,1,.36,1), height 460ms cubic-bezier(.22,1,.36,1), font-size 460ms ease; }
 .repository-tile :is(.project-trigger-copy, .project-expand-mark, .repository-summary, .repository-number) { display: none; }
-.repository-tile.is-open :is(.project-trigger-copy, .repository-summary) { display: block; animation: blob-text-in 360ms ease-out both; }
-.repository-tile.is-open .project-trigger-copy { min-width: 0; }
-.repository-tile.is-open .project-trigger-name { font-size: 22px; }
-.repository-tile.is-open .project-trigger-meta { font-size: 12px; color: var(--muted); }
-.repository-tile.is-open .repository-summary { color: var(--muted); font-size: 13px; line-height: 1.75; overflow-wrap: anywhere; white-space: pre-wrap; }
-.repository-tile.is-open .repository-number { display: block; position: absolute; top: 20px; right: 22px; color: var(--muted); font-size: 11px; letter-spacing: .12em; }
+.repository-tile:hover { z-index: 3; }
+.repository-tile.is-expanded { z-index: 4; width: 198px; height: 198px; border-color: #eeeeea7a; box-shadow: inset 0 1px 0 #ffffff1f, 0 22px 54px #00000080; background: radial-gradient(120% 120% at 30% 18%, #32323a, #1b1b1f 74%); }
+.repository-tile.is-expanded .project-symbol { width: 62px; height: 62px; font-size: 26px; }
 @keyframes blob-morph {
     0% { border-radius: 48% 52% 55% 45% / 52% 44% 56% 48%; }
     35% { border-radius: 56% 44% 46% 54% / 44% 58% 42% 56%; }
     70% { border-radius: 45% 55% 52% 48% / 57% 43% 56% 44%; }
     100% { border-radius: 52% 48% 44% 56% / 47% 54% 46% 53%; }
 }
-@keyframes blob-text-in { from { opacity: 0; transform: translate3d(0, 8px, 0); } to { opacity: 1; transform: none; } }
-.carousel-hint { margin: 16px 0 0; color: var(--muted); font-size: 12px; text-align: right; }
 .theme-tuffest .repository-tile { background: radial-gradient(120% 120% at 30% 18%, #352f38, #211d24 74%); border-color: var(--line); }
-.theme-tuffest .repository-tile.is-open { border-color: #f5b2cf88; background: radial-gradient(120% 140% at 20% 0%, #332c35, #241f27 78%); }
+.theme-tuffest .repository-tile.is-expanded { border-color: #f5b2cf88; background: radial-gradient(120% 120% at 30% 18%, #3b3340, #241f27 74%); }
 .performance-lite .repository-tile { animation: none; }
-.motion-reduced .repository-tile, .motion-reduced .repository-tile.is-open { animation: none; transition: none; }
+.motion-reduced .repository-tile, .motion-reduced .repository-tile.is-expanded { animation: none; transition: none; }
 @media (prefers-reduced-motion: reduce) { .repository-tile { animation: none; transition: none; } }
 @media (max-width: 700px) {
     .project-view-controls { gap: 6px; }
-    .repository-carousel { height: 400px; }
-    .repository-tile { width: 78px; height: 78px; }
-    .repository-tile.is-open { padding: 18px; }
-    .repository-tile.is-open .project-trigger-name { font-size: 20px; }
-    .carousel-hint { text-align: left; }
+    .repository-carousel { height: 420px; }
+    .repository-tile { width: 104px; height: 104px; }
+    .repository-tile .project-symbol { width: 44px; height: 44px; font-size: 19px; }
+    .repository-tile.is-expanded { width: 162px; height: 162px; }
+    .repository-tile.is-expanded .project-symbol { width: 52px; height: 52px; font-size: 22px; }
 }

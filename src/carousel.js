@@ -1,7 +1,6 @@
-// Liquid repository field: blobs drift on their own and swell into details under the pointer.
-const REST_RADIUS = 44;
-const OPEN_MAX_WIDTH = 420;
-const OPEN_MAX_HEIGHT = 232;
+// Liquid repository field: blobs drift on their own and swell in place under the pointer.
+const REST_RADIUS = 64;
+const HOVER_RADIUS = 100;
 
 export function mountCarousel(projects, container, openProject) {
     const toggle = document.getElementById('projects-layout-toggle');
@@ -18,14 +17,6 @@ export function mountCarousel(projects, container, openProject) {
         const blob = source.cloneNode(true);
         blob.classList.add('repository-tile');
         blob.removeAttribute('aria-expanded');
-        const number = document.createElement('span');
-        number.className = 'repository-number';
-        number.textContent = String(index + 1).padStart(2, '0');
-        number.setAttribute('aria-hidden', 'true');
-        const summary = document.createElement('span');
-        summary.className = 'repository-summary';
-        summary.textContent = Array.isArray(project.description) ? project.description.join('\n\n') : String(project.description ?? '');
-        blob.append(number, summary);
         field.append(blob);
         const state = {
             el: blob, x: 0, y: 0, vx: 0, vy: 0,
@@ -34,33 +25,26 @@ export function mountCarousel(projects, container, openProject) {
             open: false,
         };
         states.push(state);
-        blob.addEventListener('pointerenter', event => { if (event.pointerType === 'mouse') openBlob(state); });
-        blob.addEventListener('pointerleave', () => { if (state.open) closeBlob(state); });
+        blob.addEventListener('pointerenter', event => { if (event.pointerType === 'mouse') expand(state); });
+        blob.addEventListener('pointerleave', () => { if (state.open) collapse(state); });
         blob.style.setProperty('--blob-morph', `${(9.5 + (index % 4) * 1.6).toFixed(1)}s`);
         blob.style.animationDelay = `${(-index * 2.3).toFixed(1)}s`;
     });
     stage.append(field);
     container.before(stage);
-    const hint = document.createElement('p'); hint.className = 'carousel-hint';
-    hint.textContent = matchMedia('(hover: hover) and (pointer: fine)').matches ? 'Drifting shapes · hover to expand · click for details' : 'Tap a repository to open it';
-    stage.after(hint);
 
-    let view = 'icons', selected = null, W = 0, H = 0, openWidth = 380, openHeight = 220;
+    let view = 'icons', selected = null, W = 0, H = 0;
     let running = false, frame = 0, lastTime = 0, inView = false;
     const reduced = () => document.documentElement.classList.contains('motion-reduced');
     const clamp = (value, min, max) => Math.min(Math.max(value, min), Math.max(min, max));
     const hoverCapable = () => matchMedia('(hover: hover) and (pointer: fine)').matches;
-    const columnsFor = width => Math.max(2, Math.min(states.length || 2, 5, Math.floor(width / 190)));
+    const columnsFor = width => Math.max(2, Math.min(states.length || 2, 5, Math.floor(width / 230)));
 
     function measure() {
         const width = field.clientWidth || stage.clientWidth || 0;
         const height = field.clientHeight || stage.clientHeight || 0;
         if (!width || !height) return;
         W = width; H = height;
-        openWidth = clamp(Math.round(W - 24), 240, OPEN_MAX_WIDTH);
-        openHeight = clamp(Math.round(H - 200), 168, OPEN_MAX_HEIGHT);
-        field.style.setProperty('--blob-open-w', `${openWidth}px`);
-        field.style.setProperty('--blob-open-h', `${openHeight}px`);
     }
     function place(state) {
         state.el.style.transform = `translate3d(${state.x.toFixed(2)}px, ${state.y.toFixed(2)}px, 0) translate(-50%, -50%)`;
@@ -70,7 +54,7 @@ export function mountCarousel(projects, container, openProject) {
         if (!width) return;
         const columns = columnsFor(width);
         const rows = Math.ceil(Math.max(1, states.length) / columns);
-        stage.style.height = `${clamp(rows * 132 + 132, 400, 1100)}px`;
+        stage.style.height = `${clamp(rows * 168 + 148, 420, 1100)}px`;
         measure();
     }
     function seed() {
@@ -78,12 +62,12 @@ export function mountCarousel(projects, container, openProject) {
         if (!W || !H) return;
         const columns = columnsFor(W);
         const rows = Math.ceil(Math.max(1, states.length) / columns);
-        const insetX = 66, insetY = 62;
+        const insetX = REST_RADIUS + 18, insetY = REST_RADIUS + 16;
         const innerW = Math.max(1, W - insetX * 2), innerH = Math.max(1, H - insetY * 2);
         states.forEach((state, index) => {
             const column = index % columns, row = Math.floor(index / columns);
-            const jitterX = (((index * 37) % 11) / 10 - .5) * (W / (columns + 1)) * .4;
-            const jitterY = (((index * 53) % 7) / 6 - .5) * (H / (rows + 1)) * .5;
+            const jitterX = (((index * 37) % 11) / 10 - .5) * (W / (columns + 1)) * .35;
+            const jitterY = (((index * 53) % 7) / 6 - .5) * (H / (rows + 1)) * .4;
             state.x = insetX + (column + .5) * innerW / columns + jitterX;
             state.y = insetY + (row + .5) * innerH / rows + jitterY;
             state.vx = Math.cos(index * 2.1) * 7;
@@ -93,28 +77,22 @@ export function mountCarousel(projects, container, openProject) {
         });
     }
     function constrain(state) {
-        const minX = Math.min(W / 2, REST_RADIUS + 12), maxX = Math.max(W / 2, W - REST_RADIUS - 12);
-        const minY = Math.min(H / 2, REST_RADIUS + 12), maxY = Math.max(H / 2, H - REST_RADIUS - 12);
+        const minX = Math.min(W / 2, REST_RADIUS + 14), maxX = Math.max(W / 2, W - REST_RADIUS - 14);
+        const minY = Math.min(H / 2, REST_RADIUS + 14), maxY = Math.max(H / 2, H - REST_RADIUS - 14);
         state.x = clamp(state.x, minX, maxX);
         state.y = clamp(state.y, minY, maxY);
     }
-    function openBlob(state) {
+    function expand(state) {
         if (!hoverCapable() || selected === state) return;
-        if (selected) closeBlob(selected);
+        if (selected) collapse(selected);
         selected = state; state.open = true;
-        const halfW = openWidth / 2, halfH = openHeight / 2;
-        state.x = clamp(state.x, halfW + 14, W - halfW - 14);
-        state.y = clamp(state.y, halfH + 14, H - halfH - 14);
-        if (!reduced()) state.el.style.transition = 'transform 620ms cubic-bezier(.22,1,.36,1)';
-        state.el.classList.add('is-open');
-        place(state);
+        state.el.classList.add('is-expanded');
     }
-    function closeBlob(state) {
+    function collapse(state) {
         if (!state) return;
         state.open = false;
         if (selected === state) selected = null;
-        state.el.classList.remove('is-open');
-        state.el.style.transition = '';
+        state.el.classList.remove('is-expanded');
         state.vx += (Math.random() - .5) * 7;
         state.vy += (Math.random() - .5) * 7;
         if (running) place(state);
@@ -142,12 +120,12 @@ export function mountCarousel(projects, container, openProject) {
         // Soft separation keeps the liquid from collapsing into one mass.
         for (let i = 0; i < states.length; i += 1) {
             const a = states[i];
-            const raX = a.open ? openWidth / 2 : REST_RADIUS, raY = a.open ? openHeight / 2 : REST_RADIUS;
+            const ra = a.open ? HOVER_RADIUS : REST_RADIUS;
             for (let j = i + 1; j < states.length; j += 1) {
                 const b = states[j];
                 if (a.open && b.open) continue;
-                const rbX = b.open ? openWidth / 2 : REST_RADIUS, rbY = b.open ? openHeight / 2 : REST_RADIUS;
-                const rx = raX + rbX + 12, ry = raY + rbY + 12;
+                const rb = b.open ? HOVER_RADIUS : REST_RADIUS;
+                const rx = ra + rb + 12, ry = rx;
                 const dx = b.x - a.x, dy = b.y - a.y;
                 const overlapX = 1 - Math.abs(dx) / rx, overlapY = 1 - Math.abs(dy) / ry;
                 if (overlapX <= 0 || overlapY <= 0) continue;
@@ -167,10 +145,10 @@ export function mountCarousel(projects, container, openProject) {
         }
         for (const state of states) {
             if (state.open) continue;
-            if (state.x < REST_RADIUS + 12) { state.x = REST_RADIUS + 12; state.vx = Math.abs(state.vx) * .5; }
-            if (state.x > W - REST_RADIUS - 12) { state.x = W - REST_RADIUS - 12; state.vx = -Math.abs(state.vx) * .5; }
-            if (state.y < REST_RADIUS + 12) { state.y = REST_RADIUS + 12; state.vy = Math.abs(state.vy) * .5; }
-            if (state.y > H - REST_RADIUS - 12) { state.y = H - REST_RADIUS - 12; state.vy = -Math.abs(state.vy) * .5; }
+            if (state.x < REST_RADIUS + 14) { state.x = REST_RADIUS + 14; state.vx = Math.abs(state.vx) * .5; }
+            if (state.x > W - REST_RADIUS - 14) { state.x = W - REST_RADIUS - 14; state.vx = -Math.abs(state.vx) * .5; }
+            if (state.y < REST_RADIUS + 14) { state.y = REST_RADIUS + 14; state.vy = Math.abs(state.vy) * .5; }
+            if (state.y > H - REST_RADIUS - 14) { state.y = H - REST_RADIUS - 14; state.vy = -Math.abs(state.vy) * .5; }
             place(state);
         }
     }
@@ -187,8 +165,8 @@ export function mountCarousel(projects, container, openProject) {
         else if (frame) { cancelAnimationFrame(frame); frame = 0; }
     }
     function setView(next, persist = true) {
-        closeBlob(selected);
-        view = next; stage.hidden = hint.hidden = view !== 'icons'; container.hidden = view === 'icons';
+        collapse(selected);
+        view = next; stage.hidden = view !== 'icons'; container.hidden = view === 'icons';
         container.classList.toggle('is-grid', view === 'grid'); toggle.dataset.view = view;
         const target = { icons: 'list', list: 'grid', grid: 'icons' }[view];
         toggle.setAttribute('aria-label', `Use ${target} layout`); toggle.title = `Use ${target} layout`; toggle.setAttribute('aria-pressed', String(view !== 'icons'));
@@ -201,16 +179,16 @@ export function mountCarousel(projects, container, openProject) {
         const project = button && projects.find(item => item.id === button.dataset.projectId);
         if (project) void openProject(project, button);
     });
-    stage.addEventListener('pointerleave', () => closeBlob(selected));
+    stage.addEventListener('pointerleave', () => collapse(selected));
     document.addEventListener('keydown', event => {
-        if (event.key === 'Escape' && !document.body.classList.contains('project-dialog-open')) closeBlob(selected);
+        if (event.key === 'Escape' && !document.body.classList.contains('project-dialog-open')) collapse(selected);
     });
     toggle.addEventListener('click', () => setView({ icons: 'list', list: 'grid', grid: 'icons' }[view]));
-    window.addEventListener('motionchange', () => { closeBlob(selected); sync(); });
-    window.addEventListener('dialogchange', () => { closeBlob(selected); sync(); });
-    window.addEventListener('scroll', () => closeBlob(selected), { passive: true });
+    window.addEventListener('motionchange', () => { collapse(selected); sync(); });
+    window.addEventListener('dialogchange', () => { collapse(selected); sync(); });
+    window.addEventListener('scroll', () => collapse(selected), { passive: true });
     window.addEventListener('resize', () => {
-        closeBlob(selected);
+        collapse(selected);
         if (view !== 'icons') return;
         layout();
         for (const state of states) { constrain(state); place(state); }

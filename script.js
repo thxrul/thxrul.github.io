@@ -754,7 +754,7 @@ document.addEventListener('focusin', event => {
 // Fetch and parse the dialog library only as the project section approaches.
 let projectModulePromise;
 function loadProjectDialogs() {
-    if (!projectModulePromise) projectModulePromise = import('./assets/projects.js?v=20261122-1').then(module => module.projectsReady).catch(error => {
+    if (!projectModulePromise) projectModulePromise = import('./assets/projects.js?v=20261122-2').then(module => module.projectsReady).catch(error => {
         projectModulePromise = null;
         throw error;
     });
