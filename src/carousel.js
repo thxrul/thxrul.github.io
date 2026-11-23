@@ -42,7 +42,7 @@ export function mountCarousel(projects, container, openProject) {
         empties.push({
             el, x: 0, y: 0, vx: 0, vy: 0,
             phase: i * 2.11 + 4, wander: .13 + ((i * 31) % 7) / 100,
-            open: false, empty: true, r: radius + 6,
+            open: false, empty: true, r: radius + 6, d: radius * 2,
         });
     }
     const all = states.concat(empties);
@@ -57,8 +57,20 @@ export function mountCarousel(projects, container, openProject) {
     const columnsFor = width => Math.max(2, Math.min(states.length || 2, 5, Math.floor(width / 230)));
     const restHalf = () => W <= 700 ? 52 : 64;
     const hoverHalf = () => W <= 700 ? 81 : 99;
-    // Resting blobs keep enough clearance that a full-size hover swell still fits the stage.
-    const boundOf = state => state.empty ? state.r + 10 : hoverHalf() + 8;
+    // Resting blobs keep enough clearance that a hover swell fits the stage, except on narrow
+    // touch layouts where nothing can hover and the field can sit tight against the edges.
+    const boundOf = state => {
+        if (state.empty) return state.r + 10;
+        return W <= 700 && !hoverCapable() ? restHalf() + 12 : hoverHalf() + 8;
+    };
+    function sizeEmpties(width) {
+        const factor = (width || stage.clientWidth) <= 700 ? .72 : 1;
+        for (const state of empties) {
+            const size = Math.round(state.d * factor);
+            state.el.style.setProperty('--blob-size', `${size}px`);
+            state.r = Math.round(size / 2) + 4;
+        }
+    }
 
     function measure() {
         const width = field.clientWidth || stage.clientWidth || 0;
@@ -72,9 +84,15 @@ export function mountCarousel(projects, container, openProject) {
     function layout() {
         const width = stage.clientWidth;
         if (!width) return;
+        const narrow = width <= 700;
+        const roomy = narrow && hoverCapable();
         const columns = columnsFor(width);
         const rows = Math.ceil(Math.max(1, states.length) / columns);
-        stage.style.height = `${clamp(rows * 180 + 176, 440, 1150)}px`;
+        const rowHeight = narrow ? (roomy ? 152 : 130) : 180;
+        const padding = narrow ? (roomy ? 122 : 104) : 176;
+        const floor = narrow ? (roomy ? 360 : 290) : 440;
+        stage.style.height = `${clamp(rows * rowHeight + padding, floor, 1150)}px`;
+        sizeEmpties(width);
         measure();
     }
     function seed() {
