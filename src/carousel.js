@@ -54,19 +54,33 @@ export function mountCarousel(projects, container, openProject) {
     const reduced = () => document.documentElement.classList.contains('motion-reduced');
     const clamp = (value, min, max) => Math.min(Math.max(value, min), Math.max(min, max));
     const hoverCapable = () => matchMedia('(hover: hover) and (pointer: fine)').matches;
-    const columnsFor = width => Math.max(2, Math.min(states.length || 2, 5, Math.floor(width / 230)));
-    const restHalf = () => W <= 700 ? 52 : 64;
-    const hoverHalf = () => W <= 700 ? 81 : 99;
+    // All narrow-layout and physics decisions derive from the actually rendered blob sizes and
+    // the viewport, so the band between the CSS mobile breakpoint and 700px stays consistent.
+    const blobRestSize = () => {
+        const tile = states[0] && states[0].el;
+        if (tile) {
+            const s = getComputedStyle(tile).getPropertyValue('--blob-size').trim();
+            if (s) { const n = parseFloat(s); if (!isNaN(n) && n > 0) return n; }
+        }
+        return 128;
+    };
+    const blobHoverScale = 1.55;
+    const restHalf = () => blobRestSize() / 2;
+    const hoverHalf = () => blobRestSize() / 2 * blobHoverScale;
+    const isNarrow = () => window.matchMedia('(max-width: 700px)').matches;
+    const touchLayout = () => isNarrow() && !hoverCapable();
+    const narrowLayout = () => isNarrow();
     // Resting blobs keep enough clearance that a hover swell fits the stage, except on narrow
     // touch layouts where nothing can hover and the field can sit tight against the edges.
     const boundOf = state => {
         if (state.empty) return state.r + 10;
-        return W <= 700 && !hoverCapable() ? restHalf() + 12 : hoverHalf() + 8;
+        return touchLayout() ? restHalf() + 12 : hoverHalf() + 8;
     };
-    function sizeEmpties(width) {
-        const factor = (width || stage.clientWidth) <= 700 ? .72 : 1;
+    const columnsFor = width => Math.max(2, Math.min(states.length || 2, 5, Math.floor(width / (blobRestSize() * 1.78))));
+    function sizeEmpties() {
+        const narrow = narrowLayout();
         for (const state of empties) {
-            const size = Math.round(state.d * factor);
+            const size = narrow ? Math.round(state.d * .72) : Math.round(state.d);
             state.el.style.setProperty('--blob-size', `${size}px`);
             state.r = Math.round(size / 2) + 4;
         }
@@ -84,15 +98,17 @@ export function mountCarousel(projects, container, openProject) {
     function layout() {
         const width = stage.clientWidth;
         if (!width) return;
-        const narrow = width <= 700;
-        const roomy = narrow && hoverCapable();
+        sizeEmpties();
         const columns = columnsFor(width);
         const rows = Math.ceil(Math.max(1, states.length) / columns);
-        const rowHeight = narrow ? (roomy ? 152 : 130) : 180;
-        const padding = narrow ? (roomy ? 122 : 104) : 176;
-        const floor = narrow ? (roomy ? 360 : 290) : 440;
+        const narrow = narrowLayout();
+        const restH = restHalf(), hoverH = hoverHalf();
+        // Row pitch and vertical padding scale with the rendered blob diameter so the field height
+        // tracks the actual tiles instead of hardcoded desktop/narrow numbers.
+        const rowHeight = narrow ? (touchLayout() ? Math.round(restH * 2.54) : Math.round(restH * 2.92)) : Math.round(restH * 2.81);
+        const padding = narrow ? (touchLayout() ? Math.round(restH * 2.35) : Math.round(restH * 2.35)) : Math.round(restH * 2.75);
+        const floor = narrow ? (touchLayout() ? Math.round(restH * 5.58) : Math.round(restH * 6.92)) : Math.round(restH * 6.88);
         stage.style.height = `${clamp(rows * rowHeight + padding, floor, 1150)}px`;
-        sizeEmpties(width);
         measure();
     }
     function seed() {
@@ -168,13 +184,14 @@ export function mountCarousel(projects, container, openProject) {
             state.y += state.vy * dt;
         }
         // Soft separation keeps the liquid from collapsing into one mass.
+        const raLookup = state => state.open ? hoverHalf() : (state.empty ? state.r : restHalf());
         for (let i = 0; i < all.length; i += 1) {
             const a = all[i];
-            const ra = a.open ? hoverHalf() : (a.empty ? a.r : restHalf());
+            const ra = raLookup(a);
             for (let j = i + 1; j < all.length; j += 1) {
                 const b = all[j];
                 if (a.open && b.open) continue;
-                const rb = b.open ? hoverHalf() : (b.empty ? b.r : restHalf());
+                const rb = raLookup(b);
                 const rx = ra + rb + 10, ry = rx;
                 const dx = b.x - a.x, dy = b.y - a.y;
                 const overlapX = 1 - Math.abs(dx) / rx, overlapY = 1 - Math.abs(dy) / ry;
