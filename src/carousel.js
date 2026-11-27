@@ -170,16 +170,16 @@ export function mountCarousel(projects, container, openProject) {
         const dt = Math.min(48, now - lastTime) / 1000;
         lastTime = now;
         if (dt <= 0) return;
-        const drag = Math.exp(-1.4 * dt);
+        const drag = Math.exp(-1.15 * dt);
         for (const state of all) {
             if (state.open) continue;
             state.phase += dt * state.wander;
-            const ax = Math.cos(state.phase * 1.55 + 1.2) * 18 + Math.cos(state.phase * .63 + 3.1) * 12;
-            const ay = Math.sin(state.phase * 1.21 + 2.4) * 15 + Math.sin(state.phase * .47 + .8) * 11;
+            const ax = Math.cos(state.phase * 1.61 + 1.2) * 22 + Math.cos(state.phase * .61 + 3.1) * 14 + Math.cos(state.phase * 2.41 + .7) * 7;
+            const ay = Math.sin(state.phase * 1.27 + 2.4) * 18 + Math.sin(state.phase * .49 + .8) * 12 + Math.sin(state.phase * 2.63 + 1.9) * 7;
             state.vx = (state.vx + ax * dt) * drag;
             state.vy = (state.vy + ay * dt) * drag;
             const speed = Math.hypot(state.vx, state.vy);
-            if (speed > 30) { state.vx *= 30 / speed; state.vy *= 30 / speed; }
+            if (speed > 34) { state.vx *= 34 / speed; state.vy *= 34 / speed; }
             state.x += state.vx * dt;
             state.y += state.vy * dt;
         }
@@ -192,11 +192,11 @@ export function mountCarousel(projects, container, openProject) {
                 const b = all[j];
                 if (a.open && b.open) continue;
                 const rb = raLookup(b);
-                const rx = ra + rb + 10, ry = rx;
+                const rx = ra + rb + 12, ry = rx;
                 const dx = b.x - a.x, dy = b.y - a.y;
                 const overlapX = 1 - Math.abs(dx) / rx, overlapY = 1 - Math.abs(dy) / ry;
                 if (overlapX <= 0 || overlapY <= 0) continue;
-                const pushX = Math.min(rx * overlapX * .5, 2.5), pushY = Math.min(ry * overlapY * .5, 2.5);
+                const pushX = Math.min(rx * overlapX * .5, 3.2), pushY = Math.min(ry * overlapY * .5, 3.2);
                 if (pushX <= pushY) {
                     const shift = Math.sign(dx || 1) * pushX;
                     if (a.open) b.x += shift * 2;
