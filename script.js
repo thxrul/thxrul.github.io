@@ -760,15 +760,7 @@ function loadProjectDialogs() {
     });
     return projectModulePromise;
 }
-if ('IntersectionObserver' in window) {
-    const projectLoader = new IntersectionObserver(entries => {
-        if (entries.some(entry => entry.isIntersecting)) {
-            projectLoader.disconnect();
-            void loadProjectDialogs().catch(() => {});
-        }
-    }, { rootMargin: '400px' });
-    projectLoader.observe(document.getElementById('projects'));
-} else void loadProjectDialogs().catch(() => {});
+void loadProjectDialogs().catch(() => {});
 projectList.addEventListener('click', async event => {
     const fallback = event.target.closest('a[data-project-id]');
     if (!fallback || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;

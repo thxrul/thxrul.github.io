@@ -268,17 +268,12 @@ export function mountCarousel(projects, container, openProject) {
         if (saved === 'carousel' || ['icons', 'list', 'grid'].includes(saved)) initial = saved === 'carousel' ? 'icons' : saved;
     } catch {}
     container.showProjectList = () => setView('list', false);
-    layout(); seed();
-    setView(initial, false);
-    toggle.hidden = false;
+    if (!('IntersectionObserver' in window)) inView = true;
+    layout(); seed(); setView(initial, false); toggle.hidden = false; sync();
     if ('IntersectionObserver' in window) {
-        const observer = new IntersectionObserver(entries => {
+        new IntersectionObserver(entries => {
             inView = entries.some(entry => entry.isIntersecting);
             sync();
-        }, { threshold: .05 });
-        observer.observe(stage);
-    } else {
-        inView = true;
+        }, { threshold: .05 }).observe(stage);
     }
-    sync();
 }
