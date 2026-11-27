@@ -751,16 +751,17 @@ document.addEventListener('focusin', event => {
     if (link?.matches(':focus-visible')) link.style.setProperty('--link-x', `${cachedRect(link).width / 2}px`);
 });
 
-// Fetch and parse the dialog library only as the project section approaches.
+// The blob field builds synchronously from the bundled projects and the live GitHub list;
+// keep one cached import so the click handler can await it only when it has not run yet.
 let projectModulePromise;
 function loadProjectDialogs() {
-    if (!projectModulePromise) projectModulePromise = import('./assets/projects.js?v=20261127-2').then(module => module.projectsReady).catch(error => {
+    if (!projectModulePromise) projectModulePromise = import('./assets/projects.js?v=20261127-3').then(module => module.projectsReady).catch(error => {
         projectModulePromise = null;
         throw error;
     });
     return projectModulePromise;
 }
-void loadProjectDialogs().catch(() => {});
+
 projectList.addEventListener('click', async event => {
     const fallback = event.target.closest('a[data-project-id]');
     if (!fallback || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
